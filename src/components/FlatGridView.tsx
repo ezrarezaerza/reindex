@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileItem, SearchFiltersState } from '../types';
+import { FileItem, SearchFiltersState, Tag, FileTagRelation } from '../types';
 import { formatBytes } from '../utils/treeBuilder';
 import { 
   File, 
@@ -22,6 +22,8 @@ interface FlatGridViewProps {
   filters: SearchFiltersState;
   setFilters: React.Dispatch<React.SetStateAction<SearchFiltersState>>;
   onSelectFile: (fullName: string) => void;
+  tags?: Tag[];
+  fileTags?: FileTagRelation[];
 }
 
 // Map file extensions to matching Icons and Color classes
@@ -55,7 +57,9 @@ export default function FlatGridView({
   files,
   filters,
   setFilters,
-  onSelectFile
+  onSelectFile,
+  tags = [],
+  fileTags = []
 }: FlatGridViewProps) {
   // Pagination State
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -168,6 +172,12 @@ export default function FlatGridView({
                 // Extract drive letter (e.g. "E" from "E:\...")
                 const driveLetter = file.FullName.match(/^([A-Za-z]):\\/)?.[1] || '';
 
+                // Find active tags associated with this file
+                const activeFileTags = fileTags
+                  .filter(ft => ft.driveId === file.DriveId && ft.fullName === file.FullName)
+                  .map(ft => tags.find(t => t.id === ft.tagId))
+                  .filter(Boolean);
+
                 return (
                   <tr 
                     key={idx}
@@ -176,9 +186,17 @@ export default function FlatGridView({
                   >
                     {/* Filename with matching Icon */}
                     <td className="py-3.5 px-5 font-bold text-slate-800 max-w-xs truncate">
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
                         <Icon className={`w-4.5 h-4.5 shrink-0 ${color}`} />
                         <span className="truncate">{renderHighlightedText(file.Name, filters.query)}</span>
+                        {activeFileTags.map((t, tIdx) => (
+                          <span 
+                            key={tIdx} 
+                            className={`px-1.5 py-0.2 rounded text-[8px] font-bold border shrink-0 uppercase tracking-wide scale-90 ${t?.color}`}
+                          >
+                            {t?.name}
+                          </span>
+                        ))}
                       </div>
                     </td>
 

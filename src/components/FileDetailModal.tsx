@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileItem, Drive } from '../types';
+import { FileItem, Drive, Tag, VirtualCollection, FileTagRelation } from '../types';
 import { formatBytes } from '../utils/treeBuilder';
 import { 
   X, 
@@ -18,13 +18,22 @@ import {
   Image as ImageIcon,
   FileArchive,
   Code2,
-  FileCode
+  FolderHeart,
+  Tags,
+  Plus,
+  Minus
 } from 'lucide-react';
 
 interface FileDetailModalProps {
   file: FileItem | null;
   drives: Drive[];
   onClose: () => void;
+  collections: VirtualCollection[];
+  setCollections: React.Dispatch<React.SetStateAction<VirtualCollection[]>>;
+  tags: Tag[];
+  setTags: React.Dispatch<React.SetStateAction<Tag[]>>;
+  fileTags: FileTagRelation[];
+  setFileTags: React.Dispatch<React.SetStateAction<FileTagRelation[]>>;
 }
 
 // Map file extensions to matching Icons and Color classes
@@ -54,13 +63,27 @@ const getFileIconAndColor = (extension?: string) => {
   return { Icon: FileText, color: 'text-slate-400' };
 };
 
-export default function FileDetailModal({ file, drives, onClose }: FileDetailModalProps) {
+export default function FileDetailModal({ 
+  file, 
+  drives, 
+  onClose,
+  collections,
+  setCollections,
+  tags,
+  setTags,
+  fileTags,
+  setFileTags
+}: FileDetailModalProps) {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const [newTagNameLocal, setNewTagNameLocal] = React.useState('');
+  const [isAddingNewTag, setIsAddingNewTag] = React.useState(false);
 
   if (!file) return null;
 
+  const currentDriveId = file.DriveId || '';
+
   // Find associated drive
-  const associatedDrive = drives.find(d => d.id === file.DriveId);
+  const associatedDrive = drives.find(d => d.id === currentDriveId);
 
   const triggerCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -84,6 +107,84 @@ export default function FileDetailModal({ file, drives, onClose }: FileDetailMod
   const psCdCmd = `Set-Location -Path "${parentDir}"`;
 
   const { Icon, color } = getFileIconAndColor(file.Extension);
+
+  // Toggle file's inclusion in a virtual collection
+  const handleToggleCollection = (collId: string) => {
+    setCollections(prev => prev.map(c => {
+      if (c.id === collId) {
+        const isAlreadyIn = c.files.some(f => f.driveId === currentDriveId && f.fullName === file.FullName);
+        if (isAlreadyIn) {
+          return {
+            ...c,
+            files: c.files.filter(f => !(f.driveId === currentDriveId && f.fullName === file.FullName))
+          };
+        } else {
+          return {
+            ...c,
+            files: [...c.files, { driveId: currentDriveId, fullName: file.FullName }]
+          };
+        }
+      }
+      return c;
+    }));
+  };
+
+  // Toggle file tag relation
+  const isTagged = (tagId: string) => {
+    return fileTags.some(ft => ft.driveId === currentDriveId && ft.fullName === file.FullName && ft.tagId === tagId);
+  };
+
+  const handleToggleTag = (tagId: string) => {
+    const exists = isTagged(tagId);
+    if (exists) {
+      setFileTags(prev => prev.filter(ft => !(ft.driveId === currentDriveId && ft.fullName === file.FullName && ft.tagId === tagId)));
+    } else {
+      setFileTags(prev => [...prev, { driveId: currentDriveId, fullName: file.FullName, tagId }]);
+    }
+  };
+
+  // Fast inline tag creator
+  const handleCreateTagInline = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTagNameLocal.trim()) return;
+
+    // Check duplicate
+    const existing = tags.find(t => t.name.toLowerCase() === newTagNameLocal.trim().toLowerCase());
+    let targetTagId = '';
+
+    if (existing) {
+      targetTagId = existing.id;
+    } else {
+      const colors = [
+        'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
+        'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100',
+        'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+        'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+        'bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100',
+        'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+        'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+        'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100'
+      ];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      const newTag: Tag = {
+        id: `tag_${Date.now()}`,
+        name: newTagNameLocal.trim(),
+        color: randomColor
+      };
+      setTags(prev => [...prev, newTag]);
+      targetTagId = newTag.id;
+    }
+
+    // Attach to file
+    setFileTags(prev => {
+      const exists = prev.some(ft => ft.driveId === currentDriveId && ft.fullName === file.FullName && ft.tagId === targetTagId);
+      if (exists) return prev;
+      return [...prev, { driveId: currentDriveId, fullName: file.FullName, tagId: targetTagId }];
+    });
+
+    setNewTagNameLocal('');
+    setIsAddingNewTag(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200" id="file-detail-overlay">
@@ -164,6 +265,125 @@ export default function FileDetailModal({ file, drives, onClose }: FileDetailMod
                 <span className="text-slate-800 font-mono font-bold uppercase">{file.Extension.toLowerCase()}</span>
               </div>
             </div>
+          </div>
+
+          {/* ==========================================
+              VIRTUAL COLLECTIONS ASSIGNMENT
+              ========================================== */}
+          <div className="space-y-3 p-4 bg-indigo-50/20 border border-indigo-100 rounded-2xl">
+            <h5 className="text-[11px] font-mono uppercase tracking-widest text-indigo-600 font-bold flex items-center gap-1.5">
+              <FolderHeart className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Virtual Collections</span>
+            </h5>
+            
+            {collections.length === 0 ? (
+              <p className="text-[11px] text-slate-400 italic font-medium leading-relaxed">
+                No virtual collections created. You can create logical collections under the "Virtual Collections" tab in the sidebar navigation.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-slate-500 font-sans font-medium mb-1">
+                  Assign this file mapping to one or more physical storage groupings:
+                </p>
+                <div className="max-h-28 overflow-y-auto space-y-1 pr-1" id="modal-collections-toggle-list">
+                  {collections.map(c => {
+                    const isIn = c.files.some(f => f.driveId === currentDriveId && f.fullName === file.FullName);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => handleToggleCollection(c.id)}
+                        className={`w-full px-2.5 py-1.5 rounded-lg border text-left text-xs font-sans font-bold flex items-center justify-between transition-all cursor-pointer ${
+                          isIn
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-800'
+                        }`}
+                      >
+                        <span className="truncate">{c.name}</span>
+                        {isIn ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 opacity-50" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ==========================================
+              CUSTOM TAG LABELS TOGGLER
+              ========================================== */}
+          <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <h5 className="text-[11px] font-mono uppercase tracking-widest text-slate-500 font-bold flex items-center gap-1.5">
+                <Tags className="w-3.5 h-3.5 text-slate-400" />
+                <span>Custom Labels & Tags</span>
+              </h5>
+              
+              {!isAddingNewTag && (
+                <button
+                  onClick={() => setIsAddingNewTag(true)}
+                  className="text-[10px] text-indigo-600 hover:text-indigo-850 font-bold flex items-center gap-0.5"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>New Tag</span>
+                </button>
+              )}
+            </div>
+
+            {/* Inline tag creator form */}
+            {isAddingNewTag && (
+              <form onSubmit={handleCreateTagInline} className="flex gap-1.5 items-center bg-white p-1 rounded-lg border border-slate-200 shadow-xs">
+                <input
+                  type="text"
+                  placeholder="Tag label..."
+                  value={newTagNameLocal}
+                  onChange={(e) => setNewTagNameLocal(e.target.value)}
+                  required
+                  className="flex-1 px-2 py-1 text-xs font-sans text-slate-700 bg-transparent focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="px-2.5 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingNewTag(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            )}
+
+            {tags.length === 0 ? (
+              <p className="text-[11px] text-slate-400 italic font-medium leading-relaxed">
+                No custom tags registered. Click "New Tag" above to create custom metadata flags.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5" id="modal-tags-bubble-selector">
+                {tags.map(t => {
+                  const active = isTagged(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleToggleTag(t.id)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer flex items-center gap-1 ${
+                        active 
+                          ? `${t.color} scale-105 shadow-xs border-slate-400 ring-1 ring-slate-250`
+                          : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>{t.name}</span>
+                      {active && <Check className="w-2.5 h-2.5" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Absolute File Paths with Instant Copy */}

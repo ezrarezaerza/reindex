@@ -15,7 +15,9 @@ import {
   Check, 
   FolderOpen,
   LogOut,
-  User
+  User,
+  Sparkles,
+  FolderHeart
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +29,12 @@ interface SidebarProps {
   onRenameDrive: (id: string, newName: string) => void;
   currentUser?: { id: number; username: string } | null;
   onLogout?: () => void;
+  showDuplicates: boolean;
+  setShowDuplicates: (val: boolean) => void;
+  showExportSync: boolean;
+  setShowExportSync: (val: boolean) => void;
+  showCollections: boolean;
+  setShowCollections: (val: boolean) => void;
 }
 
 export default function Sidebar({
@@ -37,7 +45,13 @@ export default function Sidebar({
   onDeleteDrive,
   onRenameDrive,
   currentUser,
-  onLogout
+  onLogout,
+  showDuplicates,
+  setShowDuplicates,
+  showExportSync,
+  setShowExportSync,
+  showCollections,
+  setShowCollections
 }: SidebarProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editName, setEditName] = React.useState('');
@@ -139,9 +153,14 @@ export default function Sidebar({
         <div className="space-y-1.5" id="sidebar-drive-list">
           {/* "All Drives" Toggle */}
           <button
-            onClick={() => setActiveDriveId(null)}
+            onClick={() => {
+              setActiveDriveId(null);
+              setShowDuplicates(false);
+              setShowExportSync(false);
+              setShowCollections(false);
+            }}
             className={`w-full text-left px-3 py-3 rounded-xl transition-all duration-200 flex items-center justify-between border ${
-              activeDriveId === null
+              activeDriveId === null && !showDuplicates && !showExportSync && !showCollections
                 ? 'bg-slate-100 border-slate-200 text-slate-900 shadow-sm'
                 : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800'
             }`}
@@ -149,7 +168,7 @@ export default function Sidebar({
           >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg transition-colors ${
-                activeDriveId === null ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'
+                activeDriveId === null && !showDuplicates && !showExportSync && !showCollections ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'
               }`}>
                 <Server className="w-4 h-4" />
               </div>
@@ -163,9 +182,108 @@ export default function Sidebar({
             </div>
           </button>
 
+          {/* Space Optimizer Toggle */}
+          <button
+            onClick={() => {
+              setShowDuplicates(true);
+              setShowExportSync(false);
+              setShowCollections(false);
+              setActiveDriveId(null);
+            }}
+            className={`w-full text-left px-3 py-3 rounded-xl transition-all duration-200 flex items-center justify-between border ${
+              showDuplicates && !showExportSync && !showCollections
+                ? 'bg-gradient-to-r from-indigo-50 to-slate-100 border-indigo-200 text-indigo-900 shadow-xs'
+                : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+            }`}
+            id="space-optimizer-toggle"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                showDuplicates && !showExportSync && !showCollections ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'
+              }`}>
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold font-sans flex items-center gap-1.5">
+                  <span>Space Optimizer</span>
+                </span>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Cross-drive duplicate detector</p>
+              </div>
+            </div>
+            <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded font-sans scale-90">
+              FREE UP
+            </span>
+          </button>
+
+          {/* Export & Sync Assistant Toggle */}
+          <button
+            onClick={() => {
+              setShowExportSync(true);
+              setShowDuplicates(false);
+              setShowCollections(false);
+              setActiveDriveId(null);
+            }}
+            className={`w-full text-left px-3 py-3 rounded-xl transition-all duration-200 flex items-center justify-between border ${
+              showExportSync && !showCollections
+                ? 'bg-gradient-to-r from-emerald-50 to-slate-100 border-emerald-200 text-slate-900 shadow-xs'
+                : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+            }`}
+            id="export-sync-assistant-toggle"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                showExportSync && !showCollections ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'
+              }`}>
+                <FolderSync className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold font-sans flex items-center gap-1.5">
+                  <span>Export &amp; Sync</span>
+                </span>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Robocopy script generator</p>
+              </div>
+            </div>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded font-sans scale-90">
+              TOOLS
+            </span>
+          </button>
+
+          {/* Virtual Collections Toggle */}
+          <button
+            onClick={() => {
+              setShowCollections(true);
+              setShowExportSync(false);
+              setShowDuplicates(false);
+              setActiveDriveId(null);
+            }}
+            className={`w-full text-left px-3 py-3 rounded-xl transition-all duration-200 flex items-center justify-between border ${
+              showCollections
+                ? 'bg-gradient-to-r from-indigo-50 to-slate-100 border-indigo-200 text-indigo-900 shadow-xs'
+                : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+            }`}
+            id="virtual-collections-toggle"
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                showCollections ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'
+              }`}>
+                <FolderHeart className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold font-sans flex items-center gap-1.5">
+                  <span>Virtual Collections</span>
+                </span>
+                <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Custom tags &amp; grouping</p>
+              </div>
+            </div>
+            <span className="text-[10px] bg-indigo-100 text-indigo-850 font-bold px-1.5 py-0.5 rounded font-sans scale-90">
+              LABELS
+            </span>
+          </button>
+
           {/* Drive Catalog Cards */}
           {drives.map((drive) => {
-            const isActive = activeDriveId === drive.id;
+            const isActive = activeDriveId === drive.id && !showDuplicates && !showExportSync && !showCollections;
             const Icon = getIconComponent(drive.icon);
             const style = colorMap[drive.color] || colorMap.blue;
             const isEditing = editingId === drive.id;
@@ -173,7 +291,14 @@ export default function Sidebar({
             return (
               <div
                 key={drive.id}
-                onClick={() => !isEditing && setActiveDriveId(drive.id)}
+                onClick={() => {
+                  if (!isEditing) {
+                    setActiveDriveId(drive.id);
+                    setShowDuplicates(false);
+                    setShowExportSync(false);
+                    setShowCollections(false);
+                  }
+                }}
                 className={`group relative w-full text-left p-3 rounded-xl transition-all duration-200 border cursor-pointer ${
                   isActive
                     ? 'bg-slate-100/80 border-slate-200 shadow-sm'

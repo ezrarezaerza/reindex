@@ -1,10 +1,14 @@
 import React from 'react';
-import { Drive, FileItem, SearchFiltersState } from './types';
+import { Drive, FileItem, SearchFiltersState, Tag, VirtualCollection, FileTagRelation } from './types';
 import Sidebar from './components/Sidebar';
 import StatsBar from './components/StatsBar';
+import SpaceOptimizer from './components/SpaceOptimizer';
+import ExportSyncHelper from './components/ExportSyncHelper';
+import CollectionsAndTags from './components/CollectionsAndTags';
 import SearchFilters from './components/SearchFilters';
 import TreeView from './components/TreeView';
 import FlatGridView from './components/FlatGridView';
+import StorageTreeMap from './components/StorageTreeMap';
 import FileDetailModal from './components/FileDetailModal';
 import ImportModal from './components/ImportModal';
 import AuthView from './components/AuthView';
@@ -18,8 +22,59 @@ export default function App() {
   // --- Core State ---
   const [drives, setDrives] = React.useState<Drive[]>([]);
   const [activeDriveId, setActiveDriveId] = React.useState<string | null>(null);
-  const [viewMode, setViewMode] = React.useState<'tree' | 'flat'>('tree');
+  const [viewMode, setViewMode] = React.useState<'tree' | 'flat' | 'treemap'>('tree');
   const [selectedFileFullname, setSelectedFileFullname] = React.useState<string | null>(null);
+  const [showDuplicates, setShowDuplicates] = React.useState(false);
+  const [showExportSync, setShowExportSync] = React.useState(false);
+  const [showCollections, setShowCollections] = React.useState(false);
+  
+  // Collections and custom tagging persistence
+  const [collections, setCollections] = React.useState<VirtualCollection[]>(() => {
+    const cached = localStorage.getItem('reindex_collections');
+    return cached ? JSON.parse(cached) : [
+      {
+        id: 'coll_preset_1',
+        name: 'Critical Backups',
+        description: 'High-priority business files and assets to keep redundant copies of.',
+        createdAt: new Date().toLocaleDateString(),
+        files: []
+      },
+      {
+        id: 'coll_preset_2',
+        name: 'Archive & Unused Assets',
+        description: 'Large archives that can safely stay offline on secondary storage arrays.',
+        createdAt: new Date().toLocaleDateString(),
+        files: []
+      }
+    ];
+  });
+
+  const [tags, setTags] = React.useState<Tag[]>(() => {
+    const cached = localStorage.getItem('reindex_tags');
+    return cached ? JSON.parse(cached) : [
+      { id: 'tag_1', name: 'Work', color: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' },
+      { id: 'tag_2', name: 'Personal', color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' },
+      { id: 'tag_3', name: 'Movies', color: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' },
+      { id: 'tag_4', name: 'Photos', color: 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100' },
+    ];
+  });
+
+  const [fileTags, setFileTags] = React.useState<FileTagRelation[]>(() => {
+    const cached = localStorage.getItem('reindex_file_tags');
+    return cached ? JSON.parse(cached) : [];
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('reindex_collections', JSON.stringify(collections));
+  }, [collections]);
+
+  React.useEffect(() => {
+    localStorage.setItem('reindex_tags', JSON.stringify(tags));
+  }, [tags]);
+
+  React.useEffect(() => {
+    localStorage.setItem('reindex_file_tags', JSON.stringify(fileTags));
+  }, [fileTags]);
   
   // Database status tracking
   const [dbStatus, setDbStatus] = React.useState<{ connected: boolean; error?: string }>({ connected: false });
@@ -396,6 +451,12 @@ export default function App() {
         onRenameDrive={handleRenameDrive}
         currentUser={currentUser}
         onLogout={handleLogout}
+        showDuplicates={showDuplicates}
+        setShowDuplicates={setShowDuplicates}
+        showExportSync={showExportSync}
+        setShowExportSync={setShowExportSync}
+        showCollections={showCollections}
+        setShowCollections={setShowCollections}
       />
 
       {/* 2. Main content container (Right Space) */}
@@ -453,64 +514,100 @@ export default function App() {
             </div>
           </header>
 
-          {/* 3. Bento Stats metrics layout */}
-          <StatsBar
-            activeDrive={activeDrive}
-            filteredFiles={filteredFlatFiles}
-            allFiles={allFilesCombined}
-          />
+          {showCollections ? (
+            <CollectionsAndTags
+              drives={drives}
+              collections={collections}
+              setCollections={setCollections}
+              tags={tags}
+              setTags={setTags}
+              fileTags={fileTags}
+              setFileTags={setFileTags}
+              onSelectFile={setSelectedFileFullname}
+            />
+          ) : showExportSync ? (
+            <ExportSyncHelper
+              drives={drives}
+              isOnline={isOnline}
+              authToken={authToken}
+              currentUser={currentUser}
+            />
+          ) : showDuplicates ? (
+            <SpaceOptimizer
+              drives={drives}
+              isOnline={isOnline}
+              authToken={authToken}
+              currentUser={currentUser}
+            />
+          ) : (
+            <>
+              {/* 3. Bento Stats metrics layout */}
+              <StatsBar
+                activeDrive={activeDrive}
+                filteredFiles={filteredFlatFiles}
+                allFiles={allFilesCombined}
+              />
 
-          {/* 4. Global Search filters input dashboard */}
-          <SearchFilters
-            filters={filters}
-            setFilters={setFilters}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            matchCount={filteredFlatFiles.length}
-            availableExtensions={availableExtensions}
-          />
+              {/* 4. Global Search filters input dashboard */}
+              <SearchFilters
+                filters={filters}
+                setFilters={setFilters}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                matchCount={filteredFlatFiles.length}
+                availableExtensions={availableExtensions}
+              />
 
-          {/* 5. Active presentation panel (Dynamic List / Folder Tree) */}
-          <div className="flex-1 min-h-0 relative flex flex-col" id="active-viewer-box">
-            {/* Server Search Limit notice */}
-            {isOnline && serverTotalCount > 1000 && (
-              <div className="px-6 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700 shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                  <span>Database matched <strong className="font-semibold">{serverTotalCount.toLocaleString()}</strong> files.</span>
-                </div>
-                <span className="text-[10px] bg-indigo-100/80 px-2.5 py-0.5 rounded font-mono text-indigo-600">
-                  Showing first 1,000 rows. Narrow search with query or size filters.
-                </span>
-              </div>
-            )}
-
-            <div className="flex-1 min-h-0 relative">
-              {serverLoading && (
-                <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-[1px] z-10 flex items-center justify-center transition-all">
-                  <div className="flex flex-col items-center gap-2.5 bg-white py-4 px-6 rounded-2xl border border-slate-200/60 shadow-xl">
-                    <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-[11px] font-medium text-slate-500 font-mono">Searching index map...</span>
+              {/* 5. Active presentation panel (Dynamic List / Folder Tree) */}
+              <div className="flex-1 min-h-0 relative flex flex-col" id="active-viewer-box">
+                {/* Server Search Limit notice */}
+                {isOnline && serverTotalCount > 1000 && (
+                  <div className="px-6 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700 shrink-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                      <span>Database matched <strong className="font-semibold">{serverTotalCount.toLocaleString()}</strong> files.</span>
+                    </div>
+                    <span className="text-[10px] bg-indigo-100/80 px-2.5 py-0.5 rounded font-mono text-indigo-600">
+                      Showing first 1,000 rows. Narrow search with query or size filters.
+                    </span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {viewMode === 'tree' ? (
-                <TreeView
-                  nodes={filteredTreeNodes}
-                  onSelectFile={setSelectedFileFullname}
-                  searchQuery={filters.query}
-                />
-              ) : (
-                <FlatGridView
-                  files={filteredFlatFiles}
-                  filters={filters}
-                  setFilters={setFilters}
-                  onSelectFile={setSelectedFileFullname}
-                />
-              )}
-            </div>
-          </div>
+                <div className="flex-1 min-h-0 relative">
+                  {serverLoading && (
+                    <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-[1px] z-10 flex items-center justify-center transition-all">
+                      <div className="flex flex-col items-center gap-2.5 bg-white py-4 px-6 rounded-2xl border border-slate-200/60 shadow-xl">
+                        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-[11px] font-medium text-slate-500 font-mono">Searching index map...</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {viewMode === 'tree' ? (
+                    <TreeView
+                      nodes={filteredTreeNodes}
+                      onSelectFile={setSelectedFileFullname}
+                      searchQuery={filters.query}
+                    />
+                  ) : viewMode === 'treemap' ? (
+                    <StorageTreeMap
+                      nodes={filteredTreeNodes}
+                      onSelectFile={setSelectedFileFullname}
+                    />
+                  ) : (
+                    <FlatGridView
+                      files={filteredFlatFiles}
+                      filters={filters}
+                      setFilters={setFilters}
+                      onSelectFile={setSelectedFileFullname}
+                      tags={tags}
+                      fileTags={fileTags}
+                    />
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
         </main>
       )}
@@ -521,6 +618,12 @@ export default function App() {
           file={inspectedFile}
           drives={drives}
           onClose={() => setSelectedFileFullname(null)}
+          collections={collections}
+          setCollections={setCollections}
+          tags={tags}
+          setTags={setTags}
+          fileTags={fileTags}
+          setFileTags={setFileTags}
         />
       )}
 

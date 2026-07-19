@@ -637,6 +637,88 @@ async function startServer() {
     }
   });
 
+  // 7. Find cross-drive duplicates with JSON aggregated details for space optimization
+  app.get('/api/duplicates', authenticateUser, async (req, res) => {
+    const dbPool = getPool();
+    if (!dbPool || !dbConnected) {
+      return res.status(503).json({ error: 'Database is not connected.' });
+    }
+
+    const userId = req.user!.id;
+    const { 
+      query = '', 
+      extension = '', 
+      minSize = '0',
+      limit = '100'
+    } = req.query as Record<string, string>;
+
+    try {
+      let sql = `
+        FROM files f 
+        JOIN drives d ON f.drive_id = d.id 
+        WHERE d.user_id = $1 AND f.length > 0
+      `;
+      const params: any[] = [userId];
+      let paramIdx = 2;
+
+      // Filter by extension
+      if (extension) {
+        sql += ` AND LOWER(f.extension) = LOWER($${paramIdx++})`;
+        params.push(extension);
+      }
+
+      // Filter by minSize
+      const minVal = Number(minSize);
+      if (!isNaN(minVal) && minVal > 0) {
+        sql += ` AND f.length >= $${paramIdx++}`;
+        params.push(minVal);
+      }
+
+      // Filter by search query (on filename)
+      const searchStr = query.trim();
+      if (searchStr) {
+        sql += ` AND f.name ILIKE $${paramIdx++}`;
+        params.push(`%${searchStr}%`);
+      }
+
+      const dupQuery = `
+        SELECT 
+          f.name, 
+          f.length,
+          COUNT(*)::int as duplicate_count,
+          JSON_AGG(JSON_BUILD_OBJECT(
+            'Name', f.name,
+            'FullName', f.full_name,
+            'Extension', f.extension,
+            'Length', f.length,
+            'DriveId', f.drive_id,
+            'DriveName', d.name
+          )) as occurrences
+        ${sql}
+        GROUP BY f.name, f.length
+        HAVING COUNT(*) > 1
+        ORDER BY f.length DESC
+        LIMIT $${paramIdx}
+      `;
+      params.push(parseInt(limit, 10) || 100);
+
+      const dupResult = await dbPool.query(dupQuery, params);
+
+      res.json({
+        success: true,
+        duplicates: dupResult.rows.map(row => ({
+          name: row.name,
+          length: Number(row.length),
+          duplicate_count: Number(row.duplicate_count),
+          occurrences: row.occurrences
+        }))
+      });
+    } catch (err: any) {
+      console.error('Server duplicates query failed:', err);
+      res.status(500).json({ error: 'Failed to retrieve duplicate indices.', details: err.message });
+    }
+  });
+
 
   // --- Vite Asset Serving & Production Flow ---
 

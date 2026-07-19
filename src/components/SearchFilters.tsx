@@ -10,14 +10,15 @@ import {
   Sparkles, 
   TrendingDown, 
   Database,
-  ArrowUpDown
+  ArrowUpDown,
+  LayoutGrid
 } from 'lucide-react';
 
 interface SearchFiltersProps {
   filters: SearchFiltersState;
   setFilters: React.Dispatch<React.SetStateAction<SearchFiltersState>>;
-  viewMode: 'tree' | 'flat';
-  setViewMode: (mode: 'tree' | 'flat') => void;
+  viewMode: 'tree' | 'flat' | 'treemap';
+  setViewMode: (mode: 'tree' | 'flat' | 'treemap') => void;
   matchCount: number;
   availableExtensions: string[];
 }
@@ -130,7 +131,7 @@ export default function SearchFilters({
           <div className="bg-slate-100 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shrink-0" id="view-mode-toggles">
             <button
               onClick={() => setViewMode('tree')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
                 viewMode === 'tree'
                   ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
                   : 'text-slate-500 hover:text-slate-700'
@@ -139,11 +140,11 @@ export default function SearchFilters({
               id="view-tree-btn"
             >
               <FolderTree className="w-3.5 h-3.5" />
-              <span>Folder Tree</span>
+              <span>Tree</span>
             </button>
             <button
               onClick={() => setViewMode('flat')}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
                 viewMode === 'flat'
                   ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
                   : 'text-slate-500 hover:text-slate-700'
@@ -152,7 +153,20 @@ export default function SearchFilters({
               id="view-flat-btn"
             >
               <List className="w-3.5 h-3.5" />
-              <span>Flat Grid</span>
+              <span>Grid</span>
+            </button>
+            <button
+              onClick={() => setViewMode('treemap')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                viewMode === 'treemap'
+                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+              title="WinDirStat Style Interactive Storage TreeMap"
+              id="view-treemap-btn"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>TreeMap</span>
             </button>
           </div>
         </div>

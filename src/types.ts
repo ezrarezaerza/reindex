@@ -36,3 +36,24 @@ export interface SearchFiltersState {
   maxSize: number; // in bytes, -1 for no limit
   sortBy: 'name-asc' | 'name-desc' | 'size-asc' | 'size-desc' | 'path-asc';
 }
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string; // Tailwind color class name (e.g. "red", "purple", "emerald", "amber", "pink")
+}
+
+export interface VirtualCollection {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  files: { driveId: string; fullName: string }[]; // list of items belonging to this group
+}
+
+export interface FileTagRelation {
+  driveId: string;
+  fullName: string;
+  tagId: string;
+}
+

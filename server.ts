@@ -30,7 +30,9 @@ let dbErrorMsg = '';
 function getPool() {
   if (pool) return pool;
 
-  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  const connectionString = process.env.POSTGRES_URL || 
+                           process.env.DATABASE_URL || 
+                           "postgres://d463b0d780af2c53de7ea8b42a657e1bb276a8910072df489bad0ff5894a4432:sk_BvXdkpfT_6mf-pXGJibSl@db.prisma.io:5432/postgres?sslmode=require";
   if (!connectionString) {
     dbErrorMsg = 'Database connection string (POSTGRES_URL) is not defined in environment variables.';
     console.warn('⚠️ [DB Warning]: ' + dbErrorMsg);

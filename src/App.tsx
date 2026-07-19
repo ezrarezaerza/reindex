@@ -439,18 +439,6 @@ export default function App() {
     return Array.from(exts).sort();
   }, [allFilesCombined, isOnline, serverExtensions]);
 
-  const handleRefreshDbStatus = async () => {
-    try {
-      const statusRes = await fetch('/api/db-status');
-      const statusData = await statusRes.json();
-      setDbStatus(statusData);
-      return statusData;
-    } catch (err) {
-      console.error(err);
-      return { connected: false };
-    }
-  };
-
   if (dbLoading) {
     return (
       <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-100 animate-in fade-in duration-300" id="db-loading-splash">
@@ -466,7 +454,6 @@ export default function App() {
         onAuthSuccess={handleAuthSuccess} 
         onBypass={handleBypassAuth} 
         dbStatus={dbStatus}
-        onRefreshDbStatus={handleRefreshDbStatus}
       />
     );
   }

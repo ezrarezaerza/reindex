@@ -421,22 +421,10 @@ export default function Sidebar({
           </button>
         </div>
       ) : (
-        <div className="p-4 border-t border-slate-150 bg-slate-50 flex flex-col gap-2" id="sidebar-guest-footer">
-          <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono px-1">
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-              Local Cache Mode
-            </span>
-            <span>Guest Profile</span>
-          </div>
-          <button
-            onClick={onLogout}
-            className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-semibold rounded-lg border border-indigo-150 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            id="sidebar-sign-in-btn"
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>Connect Cloud / Sign In</span>
-          </button>
+        <div className="p-4 border-t border-slate-150 bg-slate-50 text-center text-[10px] text-slate-500 font-mono flex items-center justify-center gap-1.5">
+          <span>Active Catalog Cache</span>
+          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+          <span>Ready</span>
         </div>
       )}
     </aside>

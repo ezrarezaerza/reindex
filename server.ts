@@ -223,54 +223,6 @@ async function startServer() {
     }
   });
 
-  // Dynamically set or test a new database connection string
-  app.post('/api/connect-db', async (req, res) => {
-    const { postgresUrl } = req.body;
-    if (!postgresUrl) {
-      return res.status(400).json({ error: 'PostgreSQL connection string is required.' });
-    }
-
-    try {
-      // Gracefully close any existing connection pool
-      if (pool) {
-        await pool.end().catch(() => {});
-        pool = null;
-      }
-
-      // Inject the connection string into the environment
-      process.env.POSTGRES_URL = postgresUrl;
-      process.env.DATABASE_URL = postgresUrl;
-
-      // Re-initialize connection pool
-      const dbPool = getPool();
-      if (!dbPool) {
-        throw new Error('Could not initialize PostgreSQL client pool.');
-      }
-
-      // Verify connection immediately
-      const client = await dbPool.connect();
-      await client.query('SELECT 1');
-      client.release();
-
-      dbConnected = true;
-      dbErrorMsg = '';
-
-      // Initialize schemas & tables on the newly connected database
-      await initializeDatabase();
-
-      res.json({ success: true, connected: true });
-    } catch (err: any) {
-      dbConnected = false;
-      dbErrorMsg = err.message;
-      // Reset pool so we don't hold a corrupted reference
-      if (pool) {
-        await pool.end().catch(() => {});
-        pool = null;
-      }
-      res.status(400).json({ success: false, connected: false, error: err.message });
-    }
-  });
-
   // --- Authentication Operations ---
 
   // Register a new user profile

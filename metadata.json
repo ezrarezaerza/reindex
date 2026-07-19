@@ -1,0 +1,6 @@
+{
+  "name": "ReIndex",
+  "description": "A sleek, high-performance catalog manager and search engine for external hard drives.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

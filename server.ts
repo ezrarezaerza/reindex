@@ -158,17 +158,31 @@ async function initializeDatabase() {
   }
 }
 
-async function startServer() {
-  const app = express();
+const app = express();
 
-  // Parse JSON payloads up to 100MB (crucial for uploading massive file indices)
-  app.use(express.json({ limit: '100mb' }));
-  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// Parse JSON payloads up to 100MB (crucial for uploading massive file indices)
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
-  // Run database initialization
-  await initializeDatabase();
+// Express middleware to ensure database is initialized on any request (crucial for Vercel serverless)
+let dbInitializationPromise: Promise<void> | null = null;
+async function ensureDbInitialized() {
+  if (!dbInitializationPromise) {
+    dbInitializationPromise = initializeDatabase();
+  }
+  return dbInitializationPromise;
+}
 
-  // --- Authentication Middleware ---
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbInitialized();
+  } catch (err) {
+    console.error('Error ensuring database is initialized:', err);
+  }
+  next();
+});
+
+// --- Authentication Middleware ---
   async function authenticateUser(req: express.Request, res: express.Response, next: express.NextFunction) {
     const token = req.headers['x-auth-token'] || req.headers['authorization']?.toString().replace('Bearer ', '');
     if (!token) {
@@ -724,23 +738,28 @@ async function startServer() {
 
   // --- Vite Asset Serving & Production Flow ---
 
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+  async function runServer() {
+    if (process.env.NODE_ENV !== 'production') {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } else {
+      const distPath = path.join(process.cwd(), 'dist');
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server listening on http://localhost:${PORT}`);
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server listening on http://localhost:${PORT}`);
-  });
-}
+  if (!process.env.VERCEL) {
+    runServer();
+  }
 
-startServer();
+  export default app;

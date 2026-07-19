@@ -439,6 +439,25 @@ export default function App() {
     return Array.from(exts).sort();
   }, [allFilesCombined, isOnline, serverExtensions]);
 
+  if (dbLoading) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-100 animate-in fade-in duration-300" id="db-loading-splash">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-sm font-mono text-slate-400">Verifying Workspace Connection...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser && !bypassAuth) {
+    return (
+      <AuthView 
+        onAuthSuccess={handleAuthSuccess} 
+        onBypass={handleBypassAuth} 
+        dbStatus={dbStatus}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen bg-slate-50 text-slate-900 overflow-hidden font-sans" id="app-root-container">
       {/* 1. Sidebar Container (Left Rail) */}
@@ -460,157 +479,146 @@ export default function App() {
       />
 
       {/* 2. Main content container (Right Space) */}
-      {dbStatus.connected && !currentUser && !bypassAuth ? (
-        <AuthView onAuthSuccess={handleAuthSuccess} onBypass={handleBypassAuth} />
-      ) : (
-        <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50" id="app-main-viewport">
-          
-          {/* Main Workspace Header bar */}
-          <header className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0" id="main-header">
-            <div className="space-y-0.5">
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Database className="w-4.5 h-4.5 text-indigo-600" />
-                <span>{currentUser ? `${currentUser.username}'s Cloud Index` : 'Offline Indices Workspace'}</span>
-              </h2>
-              <p className="text-xs text-slate-500 font-mono">
-                Browsing {activeDrive ? `Partition ${activeDrive.letter}:\\` : 'Unified drive database storage map'}
-              </p>
+      <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50" id="app-main-viewport">
+        
+        {/* Main Workspace Header bar */}
+        <header className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0" id="main-header">
+          <div className="space-y-0.5">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <Database className="w-4.5 h-4.5 text-indigo-600" />
+              <span>{currentUser ? `${currentUser.username}'s ${dbStatus.connected ? 'Cloud Index' : 'Simulated Index'}` : 'Offline Indices Workspace'}</span>
+            </h2>
+            <p className="text-xs text-slate-500 font-mono">
+              Browsing {activeDrive ? `Partition ${activeDrive.letter}:\\` : 'Unified drive database storage map'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Database connection badge */}
+            <div className={`px-3 py-1.5 rounded-full border text-xs flex items-center gap-1.5 font-medium ${
+              dbStatus.connected 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                : 'bg-amber-50 border-amber-200 text-amber-700'
+            }`}>
+              {dbStatus.connected ? (
+                <>
+                  <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                  <span className="font-sans">Vercel Postgres Connected</span>
+                </>
+              ) : (
+                <>
+                  <CloudOff className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="font-sans" title={dbStatus.error || 'Please configure POSTGRES_URL in setting panel.'}>Local Cache Mode (DB Offline)</span>
+                </>
+              )}
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Database connection badge */}
-              <div className={`px-3 py-1.5 rounded-full border text-xs flex items-center gap-1.5 font-medium ${
-                dbLoading 
-                  ? 'bg-slate-50 border-slate-200 text-slate-500'
-                  : dbStatus.connected 
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                    : 'bg-amber-50 border-amber-200 text-amber-700'
-              }`}>
-                {dbLoading ? (
-                  <>
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></div>
-                    <span className="font-sans">Checking connection...</span>
-                  </>
-                ) : dbStatus.connected ? (
-                  <>
-                    <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-                    <span className="font-sans">Vercel Postgres Connected</span>
-                  </>
-                ) : (
-                  <>
-                    <CloudOff className="w-3.5 h-3.5 text-amber-600" />
-                    <span className="font-sans" title={dbStatus.error || 'Please configure POSTGRES_URL in setting panel.'}>Local Cache Mode (DB Offline)</span>
-                  </>
-                )}
-              </div>
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+            >
+              <FolderSync className="w-3.5 h-3.5" />
+              <span>Add Hard Drive</span>
+            </button>
+          </div>
+        </header>
 
-              <button
-                onClick={() => setIsImportOpen(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-              >
-                <FolderSync className="w-3.5 h-3.5" />
-                <span>Add Hard Drive</span>
-              </button>
-            </div>
-          </header>
-
-          {showCollections ? (
-            <CollectionsAndTags
-              drives={drives}
-              collections={collections}
-              setCollections={setCollections}
-              tags={tags}
-              setTags={setTags}
-              fileTags={fileTags}
-              setFileTags={setFileTags}
-              onSelectFile={setSelectedFileFullname}
+        {showCollections ? (
+          <CollectionsAndTags
+            drives={drives}
+            collections={collections}
+            setCollections={setCollections}
+            tags={tags}
+            setTags={setTags}
+            fileTags={fileTags}
+            setFileTags={setFileTags}
+            onSelectFile={setSelectedFileFullname}
+          />
+        ) : showExportSync ? (
+          <ExportSyncHelper
+            drives={drives}
+            isOnline={isOnline}
+            authToken={authToken}
+            currentUser={currentUser}
+          />
+        ) : showDuplicates ? (
+          <SpaceOptimizer
+            drives={drives}
+            isOnline={isOnline}
+            authToken={authToken}
+            currentUser={currentUser}
+          />
+        ) : (
+          <>
+            {/* 3. Bento Stats metrics layout */}
+            <StatsBar
+              activeDrive={activeDrive}
+              filteredFiles={filteredFlatFiles}
+              allFiles={allFilesCombined}
             />
-          ) : showExportSync ? (
-            <ExportSyncHelper
-              drives={drives}
-              isOnline={isOnline}
-              authToken={authToken}
-              currentUser={currentUser}
-            />
-          ) : showDuplicates ? (
-            <SpaceOptimizer
-              drives={drives}
-              isOnline={isOnline}
-              authToken={authToken}
-              currentUser={currentUser}
-            />
-          ) : (
-            <>
-              {/* 3. Bento Stats metrics layout */}
-              <StatsBar
-                activeDrive={activeDrive}
-                filteredFiles={filteredFlatFiles}
-                allFiles={allFilesCombined}
-              />
 
-              {/* 4. Global Search filters input dashboard */}
-              <SearchFilters
-                filters={filters}
-                setFilters={setFilters}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                matchCount={filteredFlatFiles.length}
-                availableExtensions={availableExtensions}
-              />
+            {/* 4. Global Search filters input dashboard */}
+            <SearchFilters
+              filters={filters}
+              setFilters={setFilters}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              matchCount={filteredFlatFiles.length}
+              availableExtensions={availableExtensions}
+            />
 
-              {/* 5. Active presentation panel (Dynamic List / Folder Tree) */}
-              <div className="flex-1 min-h-0 relative flex flex-col" id="active-viewer-box">
-                {/* Server Search Limit notice */}
-                {isOnline && serverTotalCount > 1000 && (
-                  <div className="px-6 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                      <span>Database matched <strong className="font-semibold">{serverTotalCount.toLocaleString()}</strong> files.</span>
+            {/* 5. Active presentation panel (Dynamic List / Folder Tree) */}
+            <div className="flex-1 min-h-0 relative flex flex-col" id="active-viewer-box">
+              {/* Server Search Limit notice */}
+              {isOnline && serverTotalCount > 1000 && (
+                <div className="px-6 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700 shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                    <span>Database matched <strong className="font-semibold">{serverTotalCount.toLocaleString()}</strong> files.</span>
+                  </div>
+                  <span className="text-[10px] bg-indigo-100/80 px-2.5 py-0.5 rounded font-mono text-indigo-600">
+                    Showing first 1,000 rows. Narrow search with query or size filters.
+                  </span>
+                </div>
+              )}
+
+              <div className="flex-1 min-h-0 relative">
+                {serverLoading && (
+                  <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-[1px] z-10 flex items-center justify-center transition-all">
+                    <div className="flex flex-col items-center gap-2.5 bg-white py-4 px-6 rounded-2xl border border-slate-200/60 shadow-xl">
+                      <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-[11px] font-medium text-slate-500 font-mono">Searching index map...</span>
                     </div>
-                    <span className="text-[10px] bg-indigo-100/80 px-2.5 py-0.5 rounded font-mono text-indigo-600">
-                      Showing first 1,000 rows. Narrow search with query or size filters.
-                    </span>
                   </div>
                 )}
 
-                <div className="flex-1 min-h-0 relative">
-                  {serverLoading && (
-                    <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-[1px] z-10 flex items-center justify-center transition-all">
-                      <div className="flex flex-col items-center gap-2.5 bg-white py-4 px-6 rounded-2xl border border-slate-200/60 shadow-xl">
-                        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[11px] font-medium text-slate-500 font-mono">Searching index map...</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {viewMode === 'tree' ? (
-                    <TreeView
-                      nodes={filteredTreeNodes}
-                      onSelectFile={setSelectedFileFullname}
-                      searchQuery={filters.query}
-                    />
-                  ) : viewMode === 'treemap' ? (
-                    <StorageTreeMap
-                      nodes={filteredTreeNodes}
-                      onSelectFile={setSelectedFileFullname}
-                    />
-                  ) : (
-                    <FlatGridView
-                      files={filteredFlatFiles}
-                      filters={filters}
-                      setFilters={setFilters}
-                      onSelectFile={setSelectedFileFullname}
-                      tags={tags}
-                      fileTags={fileTags}
-                    />
-                  )}
-                </div>
+                {viewMode === 'tree' ? (
+                  <TreeView
+                    nodes={filteredTreeNodes}
+                    onSelectFile={setSelectedFileFullname}
+                    searchQuery={filters.query}
+                  />
+                ) : viewMode === 'treemap' ? (
+                  <StorageTreeMap
+                    nodes={filteredTreeNodes}
+                    onSelectFile={setSelectedFileFullname}
+                  />
+                ) : (
+                  <FlatGridView
+                    files={filteredFlatFiles}
+                    filters={filters}
+                    setFilters={setFilters}
+                    onSelectFile={setSelectedFileFullname}
+                    tags={tags}
+                    fileTags={fileTags}
+                  />
+                )}
               </div>
-            </>
-          )}
+            </div>
+          </>
+        )}
 
-        </main>
-      )}
+      </main>
 
       {/* 6. Inspect Side panel drawer (Detail) */}
       {inspectedFile && (

@@ -4,9 +4,10 @@ import { Database, User, Lock, KeyRound, Eye, EyeOff, AlertCircle, ArrowRight, L
 interface AuthViewProps {
   onAuthSuccess: (token: string, user: { id: number; username: string }) => void;
   onBypass: () => void;
+  dbStatus: { connected: boolean; error?: string };
 }
 
-export default function AuthView({ onAuthSuccess, onBypass }: AuthViewProps) {
+export default function AuthView({ onAuthSuccess, onBypass, dbStatus }: AuthViewProps) {
   const [isLogin, setIsLogin] = React.useState(true);
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -35,6 +36,50 @@ export default function AuthView({ onAuthSuccess, onBypass }: AuthViewProps) {
     }
 
     setLoading(true);
+
+    if (!dbStatus.connected) {
+      // Simulate local auth in localStorage when database is offline
+      setTimeout(() => {
+        try {
+          const localUsersKey = 'reindex_simulated_users';
+          const rawUsers = localStorage.getItem(localUsersKey);
+          const users = rawUsers ? JSON.parse(rawUsers) : {};
+
+          if (isLogin) {
+            if (!users[trimmedUsername]) {
+              setError('Simulated Account: Username does not exist in local cache.');
+              setLoading(false);
+              return;
+            }
+            if (users[trimmedUsername] !== password) {
+              setError('Simulated Account: Incorrect local password.');
+              setLoading(false);
+              return;
+            }
+            const token = `local_mock_token_${trimmedUsername}`;
+            localStorage.setItem('reindex_token', token);
+            onAuthSuccess(token, { id: 999, username: trimmedUsername });
+          } else {
+            if (users[trimmedUsername]) {
+              setError('Simulated Account: Username already exists in local cache.');
+              setLoading(false);
+              return;
+            }
+            users[trimmedUsername] = password;
+            localStorage.setItem(localUsersKey, JSON.stringify(users));
+            const token = `local_mock_token_${trimmedUsername}`;
+            localStorage.setItem('reindex_token', token);
+            onAuthSuccess(token, { id: 999, username: trimmedUsername });
+          }
+        } catch (err: any) {
+          setError('Failed to run local authentication simulation.');
+        } finally {
+          setLoading(false);
+        }
+      }, 500);
+      return;
+    }
+
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
 
     try {
@@ -63,21 +108,27 @@ export default function AuthView({ onAuthSuccess, onBypass }: AuthViewProps) {
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center min-h-[600px] p-6 bg-slate-50" id="auth-view-screen">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col" id="auth-card">
+    <div className="flex-1 flex items-center justify-center min-h-screen p-6 bg-slate-950" id="auth-view-screen">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200/80 shadow-xl overflow-hidden flex flex-col animate-in fade-in duration-300" id="auth-card">
         
         {/* Top visual banner */}
         <div className="px-8 py-6 bg-slate-900 text-white relative">
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <Database className="w-40 h-40" />
           </div>
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-[10px] font-mono text-indigo-300 font-bold tracking-wider uppercase">
-              Cloud Catalog Sync Active
+          <div className="space-y-2">
+            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border ${
+              dbStatus.connected 
+                ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' 
+                : 'bg-amber-500/20 border-amber-400/30 text-amber-300'
+            }`}>
+              {dbStatus.connected ? 'Vercel Postgres Connected' : 'Local Cache Mode (DB Offline)'}
             </div>
             <h1 className="text-2xl font-bold font-sans tracking-tight">ReIndex Storage Portal</h1>
-            <p className="text-slate-400 text-xs font-sans">
-              Connect to your Vercel PostgreSQL database to sync and backup your drive indexes securely.
+            <p className="text-slate-400 text-xs font-sans leading-relaxed">
+              {dbStatus.connected 
+                ? 'Sign in to sync, search, and manage your drive indexes in the cloud.' 
+                : 'Database connection is offline. You can sign in using a Simulated local account or continue offline.'}
             </p>
           </div>
         </div>

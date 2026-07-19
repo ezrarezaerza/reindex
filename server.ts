@@ -3,8 +3,21 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
+
+// Extend Express Request interface to include authenticated user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: number;
+        username: string;
+      };
+    }
+  }
+}
 
 const { Pool } = pg;
 const PORT = 3000;
@@ -47,6 +60,12 @@ function getPool() {
   }
 }
 
+// Helper to hash passwords using PBKDF2 sync
+function hashPassword(password: string): string {
+  const salt = 'reindex_secure_salt_key_99';
+  return crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+}
+
 // Automatically create tables on startup if database is connected
 async function initializeDatabase() {
   const dbPool = getPool();
@@ -56,6 +75,25 @@ async function initializeDatabase() {
     const client = await dbPool.connect();
     console.log('🔌 Connected to PostgreSQL database. Checking schema...');
     
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create sessions table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token VARCHAR(255) PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMP NOT NULL
+      )
+    `);
+
     // Create drives table
     await client.query(`
       CREATE TABLE IF NOT EXISTS drives (
@@ -70,6 +108,13 @@ async function initializeDatabase() {
         description TEXT
       )
     `);
+
+    // Add user_id column to drives if it doesn't exist
+    try {
+      await client.query(`ALTER TABLE drives ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id) ON DELETE CASCADE`);
+    } catch (err) {
+      console.log('drives table user_id column already exists or alter skipped.');
+    }
 
     // Create files table
     await client.query(`
@@ -86,7 +131,19 @@ async function initializeDatabase() {
     // Add indexes for efficient search
     await client.query(`CREATE INDEX IF NOT EXISTS idx_files_drive_id ON files(drive_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_files_name ON files(name)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_files_fullname ON files(full_name)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_files_extension ON files(extension)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_files_length ON files(length)`);
+
+    // Try creating trgm extension and GIN indexes for fuzzy search (highly robust fallback if unsupported)
+    try {
+      await client.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_files_name_trgm ON files USING gin (name gin_trgm_ops)`);
+      await client.query(`CREATE INDEX IF NOT EXISTS idx_files_fullname_trgm ON files USING gin (full_name gin_trgm_ops)`);
+      console.log('⚡ pg_trgm extension and GIN trigram indexes initialized for ultra-fast searches.');
+    } catch (e: any) {
+      console.warn('⚠️ pg_trgm extension or GIN trigram index creation skipped (regular indices will be used):', e.message);
+    }
 
     client.release();
     dbConnected = true;
@@ -108,6 +165,41 @@ async function startServer() {
 
   // Run database initialization
   await initializeDatabase();
+
+  // --- Authentication Middleware ---
+  async function authenticateUser(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const token = req.headers['x-auth-token'] || req.headers['authorization']?.toString().replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required.', code: 'UNAUTHORIZED' });
+    }
+
+    const dbPool = getPool();
+    if (!dbPool || !dbConnected) {
+      return res.status(503).json({ error: 'Database is currently offline.' });
+    }
+
+    try {
+      const sessionResult = await dbPool.query(`
+        SELECT s.token, s.user_id, u.username, s.expires_at 
+        FROM sessions s 
+        JOIN users u ON s.user_id = u.id 
+        WHERE s.token = $1 AND s.expires_at > CURRENT_TIMESTAMP
+      `, [token]);
+
+      if (sessionResult.rowCount === 0) {
+        return res.status(401).json({ error: 'Session is invalid or expired.', code: 'UNAUTHORIZED' });
+      }
+
+      req.user = {
+        id: sessionResult.rows[0].user_id,
+        username: sessionResult.rows[0].username
+      };
+      next();
+    } catch (err: any) {
+      console.error('Session verification failed:', err);
+      res.status(500).json({ error: 'Auth check failure.', details: err.message });
+    }
+  }
 
   // --- API Endpoints ---
 
@@ -131,8 +223,125 @@ async function startServer() {
     }
   });
 
-  // 2. Retrieve all drives (with nested file items)
-  app.get('/api/drives', async (req, res) => {
+  // --- Authentication Operations ---
+
+  // Register a new user profile
+  app.post('/api/auth/register', async (req, res) => {
+    const dbPool = getPool();
+    if (!dbPool || !dbConnected) {
+      return res.status(503).json({ error: 'Database is offline.' });
+    }
+
+    const { username, password } = req.body;
+    if (!username || !password || username.trim().length < 3 || password.length < 4) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters and password at least 4 characters.' });
+    }
+
+    try {
+      const userCheck = await dbPool.query('SELECT id FROM users WHERE username = $1', [username.trim()]);
+      if (userCheck.rowCount > 0) {
+        return res.status(400).json({ error: 'Username is already taken.' });
+      }
+
+      const passwordHash = hashPassword(password);
+      const insertResult = await dbPool.query(
+        'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username',
+        [username.trim(), passwordHash]
+      );
+
+      const newUser = insertResult.rows[0];
+      
+      // Auto-generate session token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+
+      await dbPool.query(
+        'INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)',
+        [token, newUser.id, expiresAt]
+      );
+
+      res.status(201).json({
+        success: true,
+        token,
+        user: { id: newUser.id, username: newUser.username }
+      });
+    } catch (err: any) {
+      console.error('Registration failed:', err);
+      res.status(500).json({ error: 'Failed to complete registration.', details: err.message });
+    }
+  });
+
+  // Authenticate and log in an existing user
+  app.post('/api/auth/login', async (req, res) => {
+    const dbPool = getPool();
+    if (!dbPool || !dbConnected) {
+      return res.status(503).json({ error: 'Database is offline.' });
+    }
+
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required.' });
+    }
+
+    try {
+      const userResult = await dbPool.query('SELECT * FROM users WHERE username = $1', [username.trim()]);
+      if (userResult.rowCount === 0) {
+        return res.status(401).json({ error: 'Invalid username or password.' });
+      }
+
+      const user = userResult.rows[0];
+      if (user.password_hash !== hashPassword(password)) {
+        return res.status(401).json({ error: 'Invalid username or password.' });
+      }
+
+      // Generate session token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+
+      await dbPool.query(
+        'INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)',
+        [token, user.id, expiresAt]
+      );
+
+      res.json({
+        success: true,
+        token,
+        user: { id: user.id, username: user.username }
+      });
+    } catch (err: any) {
+      console.error('Login failed:', err);
+      res.status(500).json({ error: 'Failed to complete authentication.', details: err.message });
+    }
+  });
+
+  // Log out current user (destroy session)
+  app.post('/api/auth/logout', async (req, res) => {
+    const dbPool = getPool();
+    if (!dbPool) return res.status(503).json({ error: 'Database is offline.' });
+
+    const token = req.headers['x-auth-token'] || req.headers['authorization']?.toString().replace('Bearer ', '');
+    if (!token) {
+      return res.json({ success: true, message: 'Already logged out.' });
+    }
+
+    try {
+      await dbPool.query('DELETE FROM sessions WHERE token = $1', [token]);
+      res.json({ success: true, message: 'Logged out successfully.' });
+    } catch (err: any) {
+      console.error('Logout failed:', err);
+      res.status(500).json({ error: 'Failed to clear session.', details: err.message });
+    }
+  });
+
+  // Verify session and fetch profile
+  app.get('/api/auth/me', authenticateUser, (req, res) => {
+    res.json({ success: true, user: req.user });
+  });
+
+  // 2. Retrieve all drives (metadata-only, extremely fast) for the active user
+  app.get('/api/drives', authenticateUser, async (req, res) => {
     const dbPool = getPool();
     if (!dbPool || !dbConnected) {
       return res.status(503).json({ 
@@ -141,25 +350,11 @@ async function startServer() {
       });
     }
 
-    try {
-      console.log('Fetching drives and files from Postgres...');
-      const drivesResult = await dbPool.query('SELECT * FROM drives ORDER BY name ASC');
-      const filesResult = await dbPool.query('SELECT * FROM files ORDER BY name ASC');
+    const userId = req.user!.id;
 
-      const filesByDrive = new Map<string, any[]>();
-      for (const file of filesResult.rows) {
-        const dId = file.drive_id;
-        if (!filesByDrive.has(dId)) {
-          filesByDrive.set(dId, []);
-        }
-        filesByDrive.get(dId)!.push({
-          Name: file.name,
-          FullName: file.full_name,
-          Extension: file.extension,
-          Length: Number(file.length),
-          DriveId: dId
-        });
-      }
+    try {
+      console.log(`Fetching drives for user ID [${userId}] from Postgres...`);
+      const drivesResult = await dbPool.query('SELECT * FROM drives WHERE user_id = $1 ORDER BY name ASC', [userId]);
 
       const drives = drivesResult.rows.map(row => ({
         id: row.id,
@@ -171,7 +366,7 @@ async function startServer() {
         fileCount: Number(row.file_count) || 0,
         totalSize: Number(row.total_size) || 0,
         description: row.description || '',
-        items: filesByDrive.get(row.id) || []
+        items: [] // Empty by default in high-performance mode; files fetched on-demand via search endpoint
       }));
 
       res.json(drives);
@@ -181,8 +376,8 @@ async function startServer() {
     }
   });
 
-  // 3. Create or completely overwrite a drive catalog (with efficient batch file insert)
-  app.post('/api/drives', async (req, res) => {
+  // 3. Create or completely overwrite a drive catalog (with ultra-fast UNNEST array bulk insert)
+  app.post('/api/drives', authenticateUser, async (req, res) => {
     const dbPool = getPool();
     if (!dbPool || !dbConnected) {
       return res.status(503).json({ 
@@ -192,6 +387,7 @@ async function startServer() {
     }
 
     const { id, name, letter, color, icon, lastUpdated, fileCount, totalSize, description, items } = req.body;
+    const userId = req.user!.id;
 
     if (!id || !name || !letter) {
       return res.status(400).json({ error: 'Missing required drive parameters: id, name, or letter.' });
@@ -201,11 +397,12 @@ async function startServer() {
     try {
       await client.query('BEGIN');
 
-      // 1. Insert or update the drive profile
+      // 1. Insert or update the drive profile scoped to this user
       await client.query(`
-        INSERT INTO drives (id, name, letter, color, icon, last_updated, file_count, total_size, description)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO drives (id, user_id, name, letter, color, icon, last_updated, file_count, total_size, description)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (id) DO UPDATE SET
+          user_id = EXCLUDED.user_id,
           name = EXCLUDED.name,
           letter = EXCLUDED.letter,
           color = EXCLUDED.color,
@@ -214,31 +411,35 @@ async function startServer() {
           file_count = EXCLUDED.file_count,
           total_size = EXCLUDED.total_size,
           description = EXCLUDED.description
-      `, [id, name, letter, color, icon, lastUpdated, fileCount || 0, totalSize || 0, description || '']);
+      `, [id, userId, name, letter, color, icon, lastUpdated, fileCount || 0, totalSize || 0, description || '']);
 
       // 2. Clear old files associated with this drive
       await client.query('DELETE FROM files WHERE drive_id = $1', [id]);
 
-      // 3. Perform chunked/batch files insertions (extremely fast and memory efficient)
+      // 3. Perform UNNEST bulk array insertions (maximum performance and low latency)
       if (items && Array.isArray(items) && items.length > 0) {
-        const batchSize = 1000;
+        const batchSize = 25000; // Batch into sizes of 25k to control raw request payload limits
         for (let i = 0; i < items.length; i += batchSize) {
           const chunk = items.slice(i, i + batchSize);
-          const placeholders: string[] = [];
-          const values: any[] = [];
+          
+          const names: string[] = [];
+          const fullNames: string[] = [];
+          const extensions: string[] = [];
+          const lengths: number[] = [];
 
-          for (let j = 0; j < chunk.length; j++) {
-            const file = chunk[j];
-            const offset = j * 5;
-            placeholders.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`);
-            values.push(id, file.Name, file.FullName, file.Extension || '', file.Length || 0);
+          for (const file of chunk) {
+            names.push(file.Name || 'Unnamed file');
+            fullNames.push(file.FullName || '');
+            extensions.push(file.Extension || '');
+            lengths.push(Number(file.Length ?? 0));
           }
 
           const insertQuery = `
             INSERT INTO files (drive_id, name, full_name, extension, length)
-            VALUES ${placeholders.join(', ')}
+            SELECT $1, t.name, t.full_name, t.extension, t.length
+            FROM UNNEST($2::text[], $3::text[], $4::text[], $5::bigint[]) AS t(name, full_name, extension, length)
           `;
-          await client.query(insertQuery, values);
+          await client.query(insertQuery, [id, names, fullNames, extensions, lengths]);
         }
       }
 
@@ -255,7 +456,7 @@ async function startServer() {
   });
 
   // 4. Update single drive properties (like renaming)
-  app.patch('/api/drives/:id', async (req, res) => {
+  app.patch('/api/drives/:id', authenticateUser, async (req, res) => {
     const dbPool = getPool();
     if (!dbPool || !dbConnected) {
       return res.status(503).json({ error: 'Database is not connected.' });
@@ -263,6 +464,7 @@ async function startServer() {
 
     const { id } = req.params;
     const { name } = req.body;
+    const userId = req.user!.id;
 
     if (!name) {
       return res.status(400).json({ error: 'Missing field: name' });
@@ -270,11 +472,11 @@ async function startServer() {
 
     try {
       const result = await dbPool.query(
-        'UPDATE drives SET name = $1 WHERE id = $2 RETURNING *',
-        [name, id]
+        'UPDATE drives SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
+        [name, id, userId]
       );
       if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Drive catalog not found.' });
+        return res.status(404).json({ error: 'Drive catalog not found or not owned by you.' });
       }
       res.json({ success: true, drive: result.rows[0] });
     } catch (err: any) {
@@ -284,23 +486,154 @@ async function startServer() {
   });
 
   // 5. Delete a drive catalog (cascades automatically to delete associated files)
-  app.delete('/api/drives/:id', async (req, res) => {
+  app.delete('/api/drives/:id', authenticateUser, async (req, res) => {
     const dbPool = getPool();
     if (!dbPool || !dbConnected) {
       return res.status(503).json({ error: 'Database is not connected.' });
     }
 
     const { id } = req.params;
+    const userId = req.user!.id;
 
     try {
-      const result = await dbPool.query('DELETE FROM drives WHERE id = $1 RETURNING *', [id]);
+      const result = await dbPool.query('DELETE FROM drives WHERE id = $1 AND user_id = $2 RETURNING *', [id, userId]);
       if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Drive catalog not found.' });
+        return res.status(404).json({ error: 'Drive catalog not found or not owned by you.' });
       }
       res.json({ success: true, message: `Catalog for drive '${result.rows[0].name}' deleted.` });
     } catch (err: any) {
       console.error('Failed to delete drive catalog:', err);
       res.status(500).json({ error: 'Failed to remove storage catalog.', details: err.message });
+    }
+  });
+
+  // 6. Highly optimized database search with pagination and size/ext filters
+  app.get('/api/search', authenticateUser, async (req, res) => {
+    const dbPool = getPool();
+    if (!dbPool || !dbConnected) {
+      return res.status(503).json({ error: 'Database is not connected.' });
+    }
+
+    const userId = req.user!.id;
+    const { 
+      query = '', 
+      driveId = '', 
+      extension = '', 
+      minSize = '0', 
+      maxSize = '-1', 
+      sortBy = 'name-asc',
+      limit = '1000',
+      offset = '0'
+    } = req.query as Record<string, string>;
+
+    try {
+      let sql = `
+        FROM files f 
+        JOIN drives d ON f.drive_id = d.id 
+        WHERE d.user_id = $1
+      `;
+      const params: any[] = [userId];
+      let paramIdx = 2;
+
+      // Filter by driveId
+      if (driveId) {
+        sql += ` AND f.drive_id = $${paramIdx++}`;
+        params.push(driveId);
+      }
+
+      // Filter by extension
+      if (extension) {
+        sql += ` AND LOWER(f.extension) = LOWER($${paramIdx++})`;
+        params.push(extension);
+      }
+
+      // Filter by minSize
+      const minVal = Number(minSize);
+      if (!isNaN(minVal) && minVal > 0) {
+        sql += ` AND f.length >= $${paramIdx++}`;
+        params.push(minVal);
+      }
+
+      // Filter by maxSize
+      const maxVal = Number(maxSize);
+      if (!isNaN(maxVal) && maxVal >= 0) {
+        sql += ` AND f.length <= $${paramIdx++}`;
+        params.push(maxVal);
+      }
+
+      // Substring fuzzy matching on name or full_name
+      const searchStr = query.trim();
+      if (searchStr) {
+        sql += ` AND (f.name ILIKE $${paramIdx} OR f.full_name ILIKE $${paramIdx})`;
+        params.push(`%${searchStr}%`);
+        paramIdx++;
+      }
+
+      // 1. Fetch total count
+      const countResult = await dbPool.query(`SELECT COUNT(*)::int as total ${sql}`, params);
+      const totalCount = countResult.rows[0].total;
+
+      // 2. Fetch results with proper order by clause
+      let orderByClause = '';
+      if (sortBy === 'name-asc') {
+        orderByClause = 'ORDER BY f.name ASC';
+      } else if (sortBy === 'name-desc') {
+        orderByClause = 'ORDER BY f.name DESC';
+      } else if (sortBy === 'size-asc') {
+        orderByClause = 'ORDER BY f.length ASC';
+      } else if (sortBy === 'size-desc') {
+        orderByClause = 'ORDER BY f.length DESC';
+      } else if (sortBy === 'path-asc') {
+        orderByClause = 'ORDER BY f.full_name ASC';
+      } else {
+        orderByClause = 'ORDER BY f.name ASC';
+      }
+
+      const limitVal = parseInt(limit, 10);
+      const offsetVal = parseInt(offset, 10);
+      const queryParams = [...params];
+      let limitOffsetClause = '';
+
+      if (!isNaN(limitVal) && limitVal > 0) {
+        limitOffsetClause += ` LIMIT $${paramIdx++}`;
+        queryParams.push(limitVal);
+      }
+      if (!isNaN(offsetVal) && offsetVal >= 0) {
+        limitOffsetClause += ` OFFSET $${paramIdx++}`;
+        queryParams.push(offsetVal);
+      }
+
+      const fieldsSql = `
+        SELECT f.name as "Name", f.full_name as "FullName", f.extension as "Extension", f.length as "Length", f.drive_id as "DriveId"
+        ${sql}
+        ${orderByClause}
+        ${limitOffsetClause}
+      `;
+
+      const resultsResult = await dbPool.query(fieldsSql, queryParams);
+
+      // 3. Fast list of top 100 extensions inside the user's active drives
+      const extResult = await dbPool.query(`
+        SELECT f.extension, COUNT(*)::int as cnt
+        FROM files f
+        JOIN drives d ON f.drive_id = d.id
+        WHERE d.user_id = $1 AND f.extension IS NOT NULL AND f.extension <> ''
+        GROUP BY f.extension
+        ORDER BY cnt DESC
+        LIMIT 100
+      `, [userId]);
+
+      const availableExtensions = extResult.rows.map(r => r.extension);
+
+      res.json({
+        success: true,
+        files: resultsResult.rows,
+        totalCount,
+        availableExtensions
+      });
+    } catch (err: any) {
+      console.error('Server search execution failed:', err);
+      res.status(500).json({ error: 'Search failed.', details: err.message });
     }
   });
 

@@ -7,6 +7,7 @@ import TreeView from './components/TreeView';
 import FlatGridView from './components/FlatGridView';
 import FileDetailModal from './components/FileDetailModal';
 import ImportModal from './components/ImportModal';
+import AuthView from './components/AuthView';
 import { generateSampleDrives } from './utils/sampleData';
 import { buildTreeFromFiles, filterTree, filterFlatFiles } from './utils/treeBuilder';
 import { FolderSync, HardDrive, HelpCircle, LayoutGrid, Terminal, Database, Cloud, CloudOff } from 'lucide-react';
@@ -24,6 +25,11 @@ export default function App() {
   const [dbStatus, setDbStatus] = React.useState<{ connected: boolean; error?: string }>({ connected: false });
   const [dbLoading, setDbLoading] = React.useState(true);
 
+  // User session state
+  const [currentUser, setCurrentUser] = React.useState<{ id: number; username: string } | null>(null);
+  const [authToken, setAuthToken] = React.useState<string | null>(localStorage.getItem('reindex_token'));
+  const [bypassAuth, setBypassAuth] = React.useState(false);
+
   // Modal visibility
   const [isImportOpen, setIsImportOpen] = React.useState(false);
 
@@ -36,6 +42,55 @@ export default function App() {
     sortBy: 'name-asc'
   });
 
+  // --- Server-side Search States (for online mode) ---
+  const [serverFiles, setServerFiles] = React.useState<FileItem[]>([]);
+  const [serverTotalCount, setServerTotalCount] = React.useState(0);
+  const [serverExtensions, setServerExtensions] = React.useState<string[]>([]);
+  const [serverLoading, setServerLoading] = React.useState(false);
+
+  // Dynamic Server-Side Search fetching effect
+  React.useEffect(() => {
+    const isOnline = dbStatus.connected && authToken && currentUser;
+    if (!isOnline) {
+      return;
+    }
+
+    const fetchServerSearchResults = async () => {
+      setServerLoading(true);
+      try {
+        const queryParams = new URLSearchParams({
+          query: filters.query,
+          driveId: activeDriveId || '',
+          extension: filters.extension,
+          minSize: filters.minSize.toString(),
+          maxSize: filters.maxSize.toString(),
+          sortBy: filters.sortBy,
+          limit: '1000', // Limit to 1,000 matches to keep client memory and DOM completely fluid
+          offset: '0'
+        });
+
+        const res = await fetch(`/api/search?${queryParams.toString()}`, {
+          headers: { 'X-Auth-Token': authToken! }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setServerFiles(data.files || []);
+          setServerTotalCount(data.totalCount || 0);
+          setServerExtensions(data.availableExtensions || []);
+        }
+      } catch (err) {
+        console.error('Failed to execute server-side index search:', err);
+      } finally {
+        setServerLoading(false);
+      }
+    };
+
+    // Debounce to reduce database load and make input snappy
+    const debounceTimer = setTimeout(fetchServerSearchResults, 250);
+    return () => clearTimeout(debounceTimer);
+  }, [dbStatus.connected, authToken, currentUser, activeDriveId, filters, drives]);
+
   // --- Load and Store Drives from Database / Cache ---
   React.useEffect(() => {
     async function initData() {
@@ -46,10 +101,36 @@ export default function App() {
         setDbStatus(statusData);
 
         if (statusData.connected) {
-          const drivesRes = await fetch('/api/drives');
-          if (drivesRes.ok) {
-            const drivesData = await drivesRes.json();
-            setDrives(drivesData);
+          // If we have an authentication token, verify it
+          if (authToken) {
+            const meRes = await fetch('/api/auth/me', {
+              headers: { 'X-Auth-Token': authToken }
+            });
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              setCurrentUser(meData.user);
+
+              // Retrieve scoped drives from Postgres
+              const drivesRes = await fetch('/api/drives', {
+                headers: { 'X-Auth-Token': authToken }
+              });
+              if (drivesRes.ok) {
+                const drivesData = await drivesRes.json();
+                setDrives(drivesData);
+                setDbLoading(false);
+                return;
+              }
+            } else {
+              // Token invalid/expired, reset credentials
+              localStorage.removeItem('reindex_token');
+              setAuthToken(null);
+              setCurrentUser(null);
+            }
+          }
+
+          // If db is connected but not logged in and bypass is not set, don't fallback to local storage yet.
+          if (!bypassAuth) {
+            setDrives([]);
             setDbLoading(false);
             return;
           }
@@ -77,7 +158,37 @@ export default function App() {
     }
 
     initData();
-  }, []);
+  }, [authToken, bypassAuth]);
+
+  // --- Auth Session Methods ---
+  const handleAuthSuccess = (token: string, user: { id: number; username: string }) => {
+    setAuthToken(token);
+    setCurrentUser(user);
+    setBypassAuth(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (authToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'X-Auth-Token': authToken }
+        });
+      }
+    } catch (e) {
+      console.error('Logout request failed:', e);
+    }
+    localStorage.removeItem('reindex_token');
+    setAuthToken(null);
+    setCurrentUser(null);
+    setDrives([]);
+    setActiveDriveId(null);
+    setBypassAuth(false);
+  };
+
+  const handleBypassAuth = () => {
+    setBypassAuth(true);
+  };
 
   // --- Drive Operations ---
   const handleAddDrive = async (newDriveData: Omit<Drive, 'fileCount' | 'totalSize' | 'lastUpdated'>) => {
@@ -95,11 +206,14 @@ export default function App() {
     const updated = [...drives.filter(d => d.id !== newDrive.id), newDrive];
     setDrives(updated);
 
-    if (dbStatus.connected) {
+    if (dbStatus.connected && authToken && currentUser) {
       try {
         const res = await fetch('/api/drives', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Auth-Token': authToken
+          },
           body: JSON.stringify(newDrive)
         });
         if (!res.ok) throw new Error('Database sync failed');
@@ -126,9 +240,12 @@ export default function App() {
     const updated = drives.filter(d => d.id !== id);
     setDrives(updated);
 
-    if (dbStatus.connected) {
+    if (dbStatus.connected && authToken && currentUser) {
       try {
-        const res = await fetch(`/api/drives/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/drives/${id}`, { 
+          method: 'DELETE',
+          headers: { 'X-Auth-Token': authToken }
+        });
         if (!res.ok) throw new Error('Database delete sync failed');
       } catch (err) {
         console.error('Database delete failed, updating local cache only:', err);
@@ -161,11 +278,14 @@ export default function App() {
     });
     setDrives(updated);
 
-    if (dbStatus.connected) {
+    if (dbStatus.connected && authToken && currentUser) {
       try {
         const res = await fetch(`/api/drives/${id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Auth-Token': authToken
+          },
           body: JSON.stringify({ name: newName })
         });
         if (!res.ok) throw new Error('Database rename sync failed');
@@ -189,20 +309,32 @@ export default function App() {
   // --- Calculations and Filtering ---
   const activeDrive = drives.find(d => d.id === activeDriveId) || null;
 
+  // Hybrid Online/Offline Logic
+  const isOnline = !!(dbStatus.connected && authToken && currentUser);
+
   // 1. Accumulate all file records across all drives
   const allFilesCombined = React.useMemo(() => {
+    if (isOnline) {
+      return serverFiles;
+    }
     return drives.flatMap(d => d.items);
-  }, [drives]);
+  }, [drives, isOnline, serverFiles]);
 
   // 2. Perform Flat Filtering on files (optimized with useMemo)
   const filteredFlatFiles = React.useMemo(() => {
+    if (isOnline) {
+      return serverFiles; // Pre-filtered by database server search
+    }
     return filterFlatFiles(allFilesCombined, filters, activeDriveId);
-  }, [allFilesCombined, filters, activeDriveId]);
+  }, [allFilesCombined, filters, activeDriveId, isOnline, serverFiles]);
 
   // 3. Build tree based on active selection (active drive or all files)
   const activeScopeFiles = React.useMemo(() => {
+    if (isOnline) {
+      return serverFiles;
+    }
     return activeDrive ? activeDrive.items : allFilesCombined;
-  }, [activeDrive, allFilesCombined]);
+  }, [activeDrive, allFilesCombined, isOnline, serverFiles]);
 
   const rawTreeNodes = React.useMemo(() => {
     return buildTreeFromFiles(activeScopeFiles);
@@ -210,6 +342,10 @@ export default function App() {
 
   // 4. Perform Tree Filtering based on Search inputs
   const filteredTreeNodes = React.useMemo(() => {
+    if (isOnline) {
+      return rawTreeNodes; // Tree built directly from pre-filtered server records
+    }
+
     // If no active filters, return standard complete tree
     const hasActiveFilters = 
       filters.query !== '' || 
@@ -228,7 +364,7 @@ export default function App() {
       filters.minSize,
       filters.maxSize
     );
-  }, [rawTreeNodes, filters]);
+  }, [rawTreeNodes, filters, isOnline]);
 
   // Find inspected file properties for the side panel
   const inspectedFile = React.useMemo(() => {
@@ -238,12 +374,15 @@ export default function App() {
 
   // Get list of unique file extensions across the database for filter hints
   const availableExtensions = React.useMemo(() => {
+    if (isOnline) {
+      return serverExtensions;
+    }
     const exts = new Set<string>();
     allFilesCombined.forEach(f => {
       if (f.Extension) exts.add(f.Extension.toLowerCase());
     });
     return Array.from(exts).sort();
-  }, [allFilesCombined]);
+  }, [allFilesCombined, isOnline, serverExtensions]);
 
   return (
     <div className="flex h-screen w-screen bg-slate-50 text-slate-900 overflow-hidden font-sans" id="app-root-container">
@@ -255,96 +394,126 @@ export default function App() {
         onOpenImport={() => setIsImportOpen(true)}
         onDeleteDrive={handleDeleteDrive}
         onRenameDrive={handleRenameDrive}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* 2. Main content container (Right Space) */}
-      <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50" id="app-main-viewport">
-        
-        {/* Main Workspace Header bar */}
-        <header className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0" id="main-header">
-          <div className="space-y-0.5">
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <Database className="w-4.5 h-4.5 text-indigo-600" />
-              <span>Offline Indices Workspace</span>
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">
-              Browsing {activeDrive ? `Partition ${activeDrive.letter}:\\` : 'Unified drive database storage map'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Database connection badge */}
-            <div className={`px-3 py-1.5 rounded-full border text-xs flex items-center gap-1.5 font-medium ${
-              dbLoading 
-                ? 'bg-slate-50 border-slate-200 text-slate-500'
-                : dbStatus.connected 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                  : 'bg-amber-50 border-amber-200 text-amber-700'
-            }`}>
-              {dbLoading ? (
-                <>
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></div>
-                  <span className="font-sans">Checking connection...</span>
-                </>
-              ) : dbStatus.connected ? (
-                <>
-                  <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-                  <span className="font-sans">Vercel Postgres Connected</span>
-                </>
-              ) : (
-                <>
-                  <CloudOff className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="font-sans" title={dbStatus.error || 'Please configure POSTGRES_URL in setting panel.'}>Local Cache Mode (DB Offline)</span>
-                </>
-              )}
+      {dbStatus.connected && !currentUser && !bypassAuth ? (
+        <AuthView onAuthSuccess={handleAuthSuccess} onBypass={handleBypassAuth} />
+      ) : (
+        <main className="flex-1 flex flex-col h-full min-w-0 bg-slate-50" id="app-main-viewport">
+          
+          {/* Main Workspace Header bar */}
+          <header className="px-6 py-4 border-b border-slate-200 bg-white flex items-center justify-between shrink-0" id="main-header">
+            <div className="space-y-0.5">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Database className="w-4.5 h-4.5 text-indigo-600" />
+                <span>{currentUser ? `${currentUser.username}'s Cloud Index` : 'Offline Indices Workspace'}</span>
+              </h2>
+              <p className="text-xs text-slate-500 font-mono">
+                Browsing {activeDrive ? `Partition ${activeDrive.letter}:\\` : 'Unified drive database storage map'}
+              </p>
             </div>
 
-            <button
-              onClick={() => setIsImportOpen(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-            >
-              <FolderSync className="w-3.5 h-3.5" />
-              <span>Add Hard Drive</span>
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Database connection badge */}
+              <div className={`px-3 py-1.5 rounded-full border text-xs flex items-center gap-1.5 font-medium ${
+                dbLoading 
+                  ? 'bg-slate-50 border-slate-200 text-slate-500'
+                  : dbStatus.connected 
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                    : 'bg-amber-50 border-amber-200 text-amber-700'
+              }`}>
+                {dbLoading ? (
+                  <>
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></div>
+                    <span className="font-sans">Checking connection...</span>
+                  </>
+                ) : dbStatus.connected ? (
+                  <>
+                    <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                    <span className="font-sans">Vercel Postgres Connected</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudOff className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="font-sans" title={dbStatus.error || 'Please configure POSTGRES_URL in setting panel.'}>Local Cache Mode (DB Offline)</span>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={() => setIsImportOpen(true)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+              >
+                <FolderSync className="w-3.5 h-3.5" />
+                <span>Add Hard Drive</span>
+              </button>
+            </div>
+          </header>
+
+          {/* 3. Bento Stats metrics layout */}
+          <StatsBar
+            activeDrive={activeDrive}
+            filteredFiles={filteredFlatFiles}
+            allFiles={allFilesCombined}
+          />
+
+          {/* 4. Global Search filters input dashboard */}
+          <SearchFilters
+            filters={filters}
+            setFilters={setFilters}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            matchCount={filteredFlatFiles.length}
+            availableExtensions={availableExtensions}
+          />
+
+          {/* 5. Active presentation panel (Dynamic List / Folder Tree) */}
+          <div className="flex-1 min-h-0 relative flex flex-col" id="active-viewer-box">
+            {/* Server Search Limit notice */}
+            {isOnline && serverTotalCount > 1000 && (
+              <div className="px-6 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center justify-between text-xs text-indigo-700 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                  <span>Database matched <strong className="font-semibold">{serverTotalCount.toLocaleString()}</strong> files.</span>
+                </div>
+                <span className="text-[10px] bg-indigo-100/80 px-2.5 py-0.5 rounded font-mono text-indigo-600">
+                  Showing first 1,000 rows. Narrow search with query or size filters.
+                </span>
+              </div>
+            )}
+
+            <div className="flex-1 min-h-0 relative">
+              {serverLoading && (
+                <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-[1px] z-10 flex items-center justify-center transition-all">
+                  <div className="flex flex-col items-center gap-2.5 bg-white py-4 px-6 rounded-2xl border border-slate-200/60 shadow-xl">
+                    <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[11px] font-medium text-slate-500 font-mono">Searching index map...</span>
+                  </div>
+                </div>
+              )}
+
+              {viewMode === 'tree' ? (
+                <TreeView
+                  nodes={filteredTreeNodes}
+                  onSelectFile={setSelectedFileFullname}
+                  searchQuery={filters.query}
+                />
+              ) : (
+                <FlatGridView
+                  files={filteredFlatFiles}
+                  filters={filters}
+                  setFilters={setFilters}
+                  onSelectFile={setSelectedFileFullname}
+                />
+              )}
+            </div>
           </div>
-        </header>
 
-        {/* 3. Bento Stats metrics layout */}
-        <StatsBar
-          activeDrive={activeDrive}
-          filteredFiles={filteredFlatFiles}
-          allFiles={allFilesCombined}
-        />
-
-        {/* 4. Global Search filters input dashboard */}
-        <SearchFilters
-          filters={filters}
-          setFilters={setFilters}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          matchCount={filteredFlatFiles.length}
-          availableExtensions={availableExtensions}
-        />
-
-        {/* 5. Active presentation panel (Dynamic List / Folder Tree) */}
-        <div className="flex-1 min-h-0 relative" id="active-viewer-box">
-          {viewMode === 'tree' ? (
-            <TreeView
-              nodes={filteredTreeNodes}
-              onSelectFile={setSelectedFileFullname}
-              searchQuery={filters.query}
-            />
-          ) : (
-            <FlatGridView
-              files={filteredFlatFiles}
-              filters={filters}
-              setFilters={setFilters}
-              onSelectFile={setSelectedFileFullname}
-            />
-          )}
-        </div>
-
-      </main>
+        </main>
+      )}
 
       {/* 6. Inspect Side panel drawer (Detail) */}
       {inspectedFile && (

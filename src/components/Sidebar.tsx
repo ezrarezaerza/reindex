@@ -13,7 +13,9 @@ import {
   Edit3, 
   X, 
   Check, 
-  FolderOpen
+  FolderOpen,
+  LogOut,
+  User
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,6 +25,8 @@ interface SidebarProps {
   onOpenImport: () => void;
   onDeleteDrive: (id: string) => void;
   onRenameDrive: (id: string, newName: string) => void;
+  currentUser?: { id: number; username: string } | null;
+  onLogout?: () => void;
 }
 
 export default function Sidebar({
@@ -31,7 +35,9 @@ export default function Sidebar({
   setActiveDriveId,
   onOpenImport,
   onDeleteDrive,
-  onRenameDrive
+  onRenameDrive,
+  currentUser,
+  onLogout
 }: SidebarProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editName, setEditName] = React.useState('');
@@ -268,12 +274,34 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Powered / Support footer */}
-      <div className="p-4 border-t border-slate-150 bg-slate-50 text-center text-[10px] text-slate-500 font-mono flex items-center justify-center gap-1.5">
-        <span>Active Catalog Cache</span>
-        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-        <span>Ready</span>
-      </div>
+      {/* User profile / session state */}
+      {currentUser ? (
+        <div className="p-4 border-t border-slate-150 bg-slate-50 flex items-center justify-between" id="sidebar-user-footer">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0 font-mono">
+              {currentUser.username[0].toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-700 truncate font-sans">{currentUser.username}</p>
+              <p className="text-[9px] text-indigo-600 font-bold tracking-wide uppercase font-sans">Synced Member</p>
+            </div>
+          </div>
+          <button
+            onClick={onLogout}
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+            title="Log out of cloud"
+            id="sidebar-logout-btn"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <div className="p-4 border-t border-slate-150 bg-slate-50 text-center text-[10px] text-slate-500 font-mono flex items-center justify-center gap-1.5">
+          <span>Active Catalog Cache</span>
+          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+          <span>Ready</span>
+        </div>
+      )}
     </aside>
   );
 }

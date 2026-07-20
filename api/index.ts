@@ -124,10 +124,17 @@ async function initializeDatabase() {
         drive_id VARCHAR(50) REFERENCES drives(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         full_name TEXT NOT NULL,
-        extension VARCHAR(50),
+        extension TEXT,
         length BIGINT NOT NULL
       )
     `);
+
+    // Safely upgrade existing VARCHAR(50) extension columns to TEXT
+    try {
+      await client.query(`ALTER TABLE files ALTER COLUMN extension TYPE TEXT`);
+    } catch (err: any) {
+      console.warn('Skipped or failed altering files.extension column type to TEXT:', err.message);
+    }
 
     // Add indexes for efficient search
     await client.query(`CREATE INDEX IF NOT EXISTS idx_files_drive_id ON files(drive_id)`);
@@ -470,7 +477,135 @@ app.post('/api/drives', authenticateUser, async (req, res) => {
   }
 });
 
-// 4. Update single drive properties (like renaming)
+// 3b. Append a chunk of files to a drive catalog (for serverless payload-limit bypassing)
+app.post('/api/drives/:id/chunks', authenticateUser, async (req, res) => {
+  const dbPool = getPool();
+  if (!dbPool || !dbConnected) {
+    return res.status(503).json({ 
+      error: 'Database is not connected.', 
+      details: dbErrorMsg || 'Please configure POSTGRES_URL.' 
+    });
+  }
+
+  const { id } = req.params;
+  const { items } = req.body;
+  const userId = req.user!.id;
+
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ error: 'Missing or invalid items array in request body.' });
+  }
+
+  // Verify that the drive exists and is owned by the user
+  try {
+    const driveCheck = await dbPool.query('SELECT id FROM drives WHERE id = $1 AND user_id = $2', [id, userId]);
+    if (driveCheck.rowCount === 0) {
+      return res.status(404).json({ error: 'Drive catalog not found or not owned by you.' });
+    }
+  } catch (err: any) {
+    console.error('Error verifying drive ownership:', err);
+    return res.status(500).json({ error: 'Failed to verify drive ownership.', details: err.message });
+  }
+
+  const client = await dbPool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Perform UNNEST bulk array insertions
+    if (items.length > 0) {
+      const names: string[] = [];
+      const fullNames: string[] = [];
+      const extensions: string[] = [];
+      const lengths: number[] = [];
+
+      for (const file of items) {
+        names.push(file.Name || 'Unnamed file');
+        fullNames.push(file.FullName || '');
+        extensions.push(file.Extension || '');
+        lengths.push(Number(file.Length ?? 0));
+      }
+
+      const insertQuery = `
+        INSERT INTO files (drive_id, name, full_name, extension, length)
+        SELECT $1, t.name, t.full_name, t.extension, t.length
+        FROM UNNEST($2::text[], $3::text[], $4::text[], $5::bigint[]) AS t(name, full_name, extension, length)
+      `;
+      await client.query(insertQuery, [id, names, fullNames, extensions, lengths]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: `Successfully uploaded ${items.length} file records to drive ${id}.` });
+  } catch (err: any) {
+    await client.query('ROLLBACK');
+    console.error('Failed to save file chunk to Postgres:', err);
+    res.status(500).json({ error: 'Database transaction failed while saving file chunk.', details: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// 3c. Recalculate drive metadata from the files table
+app.post('/api/drives/:id/recalculate', authenticateUser, async (req, res) => {
+  const dbPool = getPool();
+  if (!dbPool || !dbConnected) {
+    return res.status(503).json({ error: 'Database is not connected.' });
+  }
+
+  const { id } = req.params;
+  const userId = req.user!.id;
+
+  try {
+    // Verify that the drive exists and is owned by the user
+    const driveCheck = await dbPool.query('SELECT name FROM drives WHERE id = $1 AND user_id = $2', [id, userId]);
+    if (driveCheck.rowCount === 0) {
+      return res.status(404).json({ error: 'Drive catalog not found or not owned by you.' });
+    }
+
+    // Query actual statistics from the files table
+    const statsResult = await dbPool.query(
+      'SELECT COUNT(*)::integer as file_count, COALESCE(SUM(length), 0)::bigint as total_size FROM files WHERE drive_id = $1',
+      [id]
+    );
+
+    const { file_count, total_size } = statsResult.rows[0];
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    // Update the drives table with the recalculated stats
+    const updateResult = await dbPool.query(`
+      UPDATE drives
+      SET file_count = $1, total_size = $2, last_updated = $3
+      WHERE id = $4 AND user_id = $5
+      RETURNING *
+    `, [file_count, total_size, timestamp, id, userId]);
+
+    if (updateResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Failed to update drive catalog.' });
+    }
+
+    const updatedDrive = updateResult.rows[0];
+
+    res.json({
+      success: true,
+      drive: {
+        id: updatedDrive.id,
+        name: updatedDrive.name,
+        letter: updatedDrive.letter,
+        color: updatedDrive.color,
+        icon: updatedDrive.icon,
+        lastUpdated: updatedDrive.last_updated,
+        fileCount: Number(updatedDrive.file_count) || 0,
+        totalSize: Number(updatedDrive.total_size) || 0,
+        description: updatedDrive.description || ''
+      }
+    });
+  } catch (err: any) {
+    console.error('Failed to recalculate drive metadata:', err);
+    res.status(500).json({ error: 'Failed to recalculate drive metadata.', details: err.message });
+  }
+});
+
+// 4. Update single drive properties (like renaming or appending metadata)
 app.patch('/api/drives/:id', authenticateUser, async (req, res) => {
   const dbPool = getPool();
   if (!dbPool || !dbConnected) {
@@ -478,24 +613,54 @@ app.patch('/api/drives/:id', authenticateUser, async (req, res) => {
   }
 
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, fileCount, totalSize, lastUpdated, description } = req.body;
   const userId = req.user!.id;
 
-  if (!name) {
-    return res.status(400).json({ error: 'Missing field: name' });
-  }
-
   try {
-    const result = await dbPool.query(
-      'UPDATE drives SET name = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
-      [name, id, userId]
-    );
+    const fields: string[] = [];
+    const values: any[] = [];
+    let paramIdx = 1;
+
+    if (name !== undefined) {
+      fields.push(`name = $${paramIdx++}`);
+      values.push(name);
+    }
+    if (fileCount !== undefined) {
+      fields.push(`file_count = $${paramIdx++}`);
+      values.push(fileCount);
+    }
+    if (totalSize !== undefined) {
+      fields.push(`total_size = $${paramIdx++}`);
+      values.push(totalSize);
+    }
+    if (lastUpdated !== undefined) {
+      fields.push(`last_updated = $${paramIdx++}`);
+      values.push(lastUpdated);
+    }
+    if (description !== undefined) {
+      fields.push(`description = $${paramIdx++}`);
+      values.push(description);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields provided for update.' });
+    }
+
+    values.push(id, userId);
+    const updateQuery = `
+      UPDATE drives 
+      SET ${fields.join(', ')} 
+      WHERE id = $${paramIdx++} AND user_id = $${paramIdx++} 
+      RETURNING *
+    `;
+
+    const result = await dbPool.query(updateQuery, values);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Drive catalog not found or not owned by you.' });
     }
     res.json({ success: true, drive: result.rows[0] });
   } catch (err: any) {
-    console.error('Failed to rename drive:', err);
+    console.error('Failed to update drive properties:', err);
     res.status(500).json({ error: 'Failed to update drive properties.', details: err.message });
   }
 });
@@ -642,7 +807,10 @@ app.get('/api/search', authenticateUser, async (req, res) => {
 
     res.json({
       success: true,
-      files: resultsResult.rows,
+      files: resultsResult.rows.map(row => ({
+        ...row,
+        Length: Number(row.Length) || 0
+      })),
       totalCount,
       availableExtensions
     });
@@ -725,12 +893,77 @@ app.get('/api/duplicates', authenticateUser, async (req, res) => {
         name: row.name,
         length: Number(row.length),
         duplicate_count: Number(row.duplicate_count),
-        occurrences: row.occurrences
+        occurrences: Array.isArray(row.occurrences)
+          ? row.occurrences.map((occ: any) => ({
+              ...occ,
+              Length: Number(occ.Length) || 0
+            }))
+          : []
       }))
     });
   } catch (err: any) {
     console.error('Server duplicates query failed:', err);
     res.status(500).json({ error: 'Failed to retrieve duplicate indices.', details: err.message });
+  }
+});
+
+// 7.5. Batch cleanup duplicates from database to synchronize state
+app.post('/api/duplicates/cleanup', authenticateUser, async (req, res) => {
+  const dbPool = getPool();
+  if (!dbPool || !dbConnected) {
+    return res.status(503).json({ error: 'Database is not connected.' });
+  }
+
+  const userId = req.user!.id;
+  const { filesToDelete } = req.body as { filesToDelete: Array<{ DriveId: string; FullName: string }> };
+
+  if (!filesToDelete || !Array.isArray(filesToDelete) || filesToDelete.length === 0) {
+    return res.status(400).json({ error: 'No files provided for cleanup.' });
+  }
+
+  try {
+    // Validate that the user owns the drives of the files they want to delete
+    const driveResult = await dbPool.query('SELECT id FROM drives WHERE user_id = $1', [userId]);
+    const userDriveIds = new Set(driveResult.rows.map(row => row.id));
+
+    const validDeletes = filesToDelete.filter(f => userDriveIds.has(f.DriveId));
+
+    if (validDeletes.length === 0) {
+      return res.json({ success: true, count: 0, message: 'No valid files on user drives to delete.' });
+    }
+
+    const driveIds = validDeletes.map(f => f.DriveId);
+    const fullNames = validDeletes.map(f => f.FullName);
+
+    // Batch delete
+    const deleteQuery = `
+      DELETE FROM files f
+      USING UNNEST($1::text[], $2::text[]) AS t(drive_id, full_name)
+      WHERE f.drive_id = t.drive_id AND f.full_name = t.full_name
+    `;
+
+    const result = await dbPool.query(deleteQuery, [driveIds, fullNames]);
+
+    // Recalculate drive stats
+    const uniqueDriveIds = Array.from(new Set(driveIds));
+    for (const dId of uniqueDriveIds) {
+      await dbPool.query(`
+        UPDATE drives
+        SET 
+          file_count = (SELECT COUNT(*)::integer FROM files WHERE drive_id = $1),
+          total_size = COALESCE((SELECT SUM(length)::bigint FROM files WHERE drive_id = $1), 0)
+        WHERE id = $1
+      `, [dId]);
+    }
+
+    res.json({
+      success: true,
+      count: result.rowCount || validDeletes.length,
+      message: `Successfully cleaned up ${result.rowCount || validDeletes.length} duplicate file records from database.`
+    });
+  } catch (err: any) {
+    console.error('Failed to cleanup duplicates in database:', err);
+    res.status(500).json({ error: 'Failed to cleanup duplicate file records.', details: err.message });
   }
 });
 

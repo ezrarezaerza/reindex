@@ -87,6 +87,11 @@ export default function CollectionsAndTags({
   const [newTagColor, setNewTagColor] = React.useState('bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100');
   const [isCreatingTag, setIsCreatingTag] = React.useState(false);
 
+  // Non-blocking Deletion and Alert states
+  const [deletingCollectionId, setDeletingCollectionId] = React.useState<string | null>(null);
+  const [deletingTagId, setDeletingTagId] = React.useState<string | null>(null);
+  const [tagError, setTagError] = React.useState<string | null>(null);
+
   // Filter drives map helper to resolve file details
   const resolveFileDetail = React.useCallback((driveId: string, fullName: string): FileItem & { found: boolean } => {
     const drive = drives.find(d => d.id === driveId);
@@ -132,12 +137,7 @@ export default function CollectionsAndTags({
   // Handle deleting a collection
   const handleDeleteCollection = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this virtual collection? (This does not affect the actual physical files)')) {
-      setCollections(prev => prev.filter(c => c.id !== id));
-      if (selectedCollectionId === id) {
-        setSelectedCollectionId(null);
-      }
-    }
+    setDeletingCollectionId(id);
   };
 
   // Handle removing a file from a collection
@@ -161,7 +161,7 @@ export default function CollectionsAndTags({
 
     // Check duplicate
     if (tags.some(t => t.name.toLowerCase() === newTagName.trim().toLowerCase())) {
-      alert('A tag with this name already exists.');
+      setTagError('A tag with this name already exists.');
       return;
     }
 
@@ -175,18 +175,13 @@ export default function CollectionsAndTags({
     setSelectedTagId(newTag.id);
     setNewTagName('');
     setIsCreatingTag(false);
+    setTagError(null);
   };
 
   // Handle deleting a tag
   const handleDeleteTag = (tagId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Delete this tag? (This will un-tag all files associated with it)')) {
-      setTags(prev => prev.filter(t => t.id !== tagId));
-      setFileTags(prev => prev.filter(ft => ft.tagId !== tagId));
-      if (selectedTagId === tagId) {
-        setSelectedTagId(null);
-      }
-    }
+    setDeletingTagId(tagId);
   };
 
   // Handle un-tagging a specific file
@@ -357,6 +352,43 @@ export default function CollectionsAndTags({
                 ) : (
                   collections.map(c => {
                     const isActive = selectedCollectionId === c.id;
+                    
+                    if (deletingCollectionId === c.id) {
+                      return (
+                        <div
+                          key={c.id}
+                          className="p-3 rounded-xl border border-rose-200 bg-rose-50/40 flex flex-col gap-2 animate-in fade-in duration-150"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="text-[11px] font-bold text-rose-600 font-sans leading-tight">Delete collection "{c.name}"?</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCollections(prev => prev.filter(item => item.id !== c.id));
+                                if (selectedCollectionId === c.id) {
+                                  setSelectedCollectionId(null);
+                                }
+                                setDeletingCollectionId(null);
+                              }}
+                              className="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded cursor-pointer transition-all shadow-xs"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingCollectionId(null);
+                              }}
+                              className="px-2.5 py-0.5 bg-white hover:bg-slate-100 text-slate-600 text-[10px] font-bold rounded border border-slate-200 cursor-pointer transition-all shadow-xs"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div
                         key={c.id}
@@ -401,10 +433,16 @@ export default function CollectionsAndTags({
                         type="text"
                         placeholder="e.g. Tax-2025"
                         value={newTagName}
-                        onChange={(e) => setNewTagName(e.target.value)}
+                        onChange={(e) => {
+                          setNewTagName(e.target.value);
+                          if (tagError) setTagError(null);
+                        }}
                         required
                         className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none"
                       />
+                      {tagError && (
+                        <p className="text-[10px] text-rose-600 font-bold mt-1 font-sans">{tagError}</p>
+                      )}
                     </div>
                     <div>
                       <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">Color Chip Profile</label>
@@ -452,6 +490,44 @@ export default function CollectionsAndTags({
                   tags.map(t => {
                     const isActive = selectedTagId === t.id;
                     const tagCount = fileTags.filter(ft => ft.tagId === t.id).length;
+
+                    if (deletingTagId === t.id) {
+                      return (
+                        <div
+                          key={t.id}
+                          className="p-2.5 rounded-xl border border-rose-200 bg-rose-50/40 flex flex-col gap-2 animate-in fade-in duration-150"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="text-[11px] font-bold text-rose-600 font-sans leading-tight">Delete tag "{t.name}"?</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTags(prev => prev.filter(item => item.id !== t.id));
+                                setFileTags(prev => prev.filter(ft => ft.tagId !== t.id));
+                                if (selectedTagId === t.id) {
+                                  setSelectedTagId(null);
+                                }
+                                setDeletingTagId(null);
+                              }}
+                              className="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded cursor-pointer transition-all shadow-xs"
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingTagId(null);
+                              }}
+                              className="px-2.5 py-0.5 bg-white hover:bg-slate-100 text-slate-650 text-[10px] font-bold rounded border border-slate-200 cursor-pointer transition-all shadow-xs"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div
                         key={t.id}

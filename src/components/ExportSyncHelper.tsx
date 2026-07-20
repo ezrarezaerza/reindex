@@ -58,8 +58,12 @@ export default function ExportSyncHelper({ drives, isOnline, authToken, currentU
     if (drives.length > 0 && !sourceDrive) {
       setSourceDrive(drives[0].letter || drives[0].name.substring(0, 1));
     }
-    if (drives.length > 1 && !destDrive) {
-      setDestDrive(drives[1].letter || drives[1].name.substring(0, 1));
+    if (drives.length > 1) {
+      if (!destDrive) {
+        setDestDrive(drives[1].letter || drives[1].name.substring(0, 1));
+      }
+    } else if (!destDrive) {
+      setDestDrive('custom');
     }
   }, [drives]);
 
@@ -395,7 +399,7 @@ Write-Host "=========================================================="`;
                         Drive {d.letter || d.name.substring(0,1).toUpperCase()}: ({d.name})
                       </option>
                     ))}
-                    <option value="custom" selected>Custom System Path...</option>
+                    <option value="custom">Custom System Path...</option>
                   </select>
 
                   {destDrive === 'custom' && (

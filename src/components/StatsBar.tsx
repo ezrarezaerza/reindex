@@ -18,13 +18,23 @@ interface StatsBarProps {
   activeDrive: Drive | null;
   filteredFiles: FileItem[];
   allFiles: FileItem[];
+  drives?: Drive[];
 }
 
-export default function StatsBar({ activeDrive, filteredFiles, allFiles }: StatsBarProps) {
-  // Compute statistics based on the files of the current scope (active drive or all drives)
-  const activeScopeFiles = activeDrive ? activeDrive.items : allFiles;
-  const totalCount = activeScopeFiles.length;
-  const totalSize = activeScopeFiles.reduce((acc, f) => acc + f.Length, 0);
+export default function StatsBar({ activeDrive, filteredFiles, allFiles, drives = [] }: StatsBarProps) {
+  // Compute precise statistics based on pre-calculated drive metadata when available (e.g., in cloud/online mode where drive.items is empty)
+  const totalCount = activeDrive 
+    ? (activeDrive.fileCount ?? activeDrive.items.length)
+    : (drives.length > 0 ? drives.reduce((acc, d) => acc + (d.fileCount ?? 0), 0) : allFiles.length);
+
+  const totalSize = activeDrive 
+    ? (activeDrive.totalSize ?? activeDrive.items.reduce((acc, f) => acc + (Number(f.Length) || 0), 0))
+    : (drives.length > 0 ? drives.reduce((acc, d) => acc + (Number(d.totalSize) || 0), 0) : allFiles.reduce((acc, f) => acc + (Number(f.Length) || 0), 0));
+
+  // Categorize file extensions using whatever files are currently loaded in memory
+  const activeScopeFiles = filteredFiles.length > 0 
+    ? filteredFiles 
+    : (activeDrive ? activeDrive.items : allFiles);
 
   // Categorize file extensions
   const categories = {
@@ -42,18 +52,19 @@ export default function StatsBar({ activeDrive, filteredFiles, allFiles }: Stats
   // Calculate size and count per category
   activeScopeFiles.forEach(file => {
     const ext = file.Extension.toLowerCase();
+    const length = Number(file.Length) || 0;
     let found = false;
     for (const cat of Object.values(categories)) {
       if (cat.exts.includes(ext)) {
         cat.count++;
-        cat.size += file.Length;
+        cat.size += length;
         found = true;
         break;
       }
     }
     if (!found) {
       otherCategory.count++;
-      otherCategory.size += file.Length;
+      otherCategory.size += length;
     }
   });
 

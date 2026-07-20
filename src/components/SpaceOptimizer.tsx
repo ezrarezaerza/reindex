@@ -36,9 +36,11 @@ interface SpaceOptimizerProps {
   isOnline: boolean;
   authToken: string | null;
   currentUser: any;
+  setDrives: React.Dispatch<React.SetStateAction<Drive[]>>;
+  refreshDrives: () => Promise<void>;
 }
 
-export default function SpaceOptimizer({ drives, isOnline, authToken, currentUser }: SpaceOptimizerProps) {
+export default function SpaceOptimizer({ drives, isOnline, authToken, currentUser, setDrives, refreshDrives }: SpaceOptimizerProps) {
   // Filters
   const [query, setQuery] = React.useState('');
   const [extension, setExtension] = React.useState('');
@@ -54,6 +56,37 @@ export default function SpaceOptimizer({ drives, isOnline, authToken, currentUse
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
   const [copiedPath, setCopiedPath] = React.useState<string | null>(null);
   const [copiedScript, setCopiedScript] = React.useState(false);
+  const [cleaning, setCleaning] = React.useState(false);
+  const [cleanSuccess, setCleanSuccess] = React.useState(false);
+  const [selectedFiles, setSelectedFiles] = React.useState<Set<string>>(new Set());
+
+  // Helper to retrieve all currently visible redundant files
+  const getRedundantFilesList = React.useCallback(() => {
+    const list: Array<{ DriveId: string; FullName: string; size: number }> = [];
+    duplicates.forEach(g => {
+      let masterIdx = 0;
+      if (preserveDriveId !== 'primary') {
+        const foundIdx = g.occurrences.findIndex(o => o.DriveId === preserveDriveId);
+        if (foundIdx !== -1) masterIdx = foundIdx;
+      }
+      g.occurrences.forEach((occ, idx) => {
+        if (idx !== masterIdx) {
+          list.push({
+            DriveId: occ.DriveId || '',
+            FullName: occ.FullName,
+            size: occ.Length || 0
+          });
+        }
+      });
+    });
+    return list;
+  }, [duplicates, preserveDriveId]);
+
+  // Synchronize selection: select all redundant files by default when duplicates load or preserveDriveId changes
+  React.useEffect(() => {
+    const red = getRedundantFilesList();
+    setSelectedFiles(new Set(red.map(r => `${r.DriveId}::${r.FullName}`)));
+  }, [duplicates, getRedundantFilesList]);
 
   // Available extensions list for filtering
   const availableExtensions = React.useMemo(() => {
@@ -210,6 +243,12 @@ export default function SpaceOptimizer({ drives, isOnline, authToken, currentUse
     };
   }, [duplicates]);
 
+  // Global selection helpers
+  const allRedundantList = getRedundantFilesList();
+  const allRedundantKeys = allRedundantList.map(r => `${r.DriveId}::${r.FullName}`);
+  const allSelected = allRedundantKeys.length > 0 && allRedundantKeys.every(k => selectedFiles.has(k));
+  const someSelected = allRedundantKeys.length > 0 && allRedundantKeys.some(k => selectedFiles.has(k)) && !allSelected;
+
   // Copy helper
   const handleCopyPath = (path: string) => {
     navigator.clipboard.writeText(path);
@@ -224,17 +263,15 @@ export default function SpaceOptimizer({ drives, isOnline, authToken, currentUse
 # This script targets redundant cross-drive files to recover space.
 # ONLY duplicates on non-preserved paths are targeted.
 
-# --- SAFE REMOVAL PRESETS ---
-$WhatIfPreference = $true  # Set to $false to actually delete files after verification
+# --- REMOVAL PRESETS ---
 $ReportOnly = $true       # Writes a detailed report file of matches
 $LogPath = "$HOME\\Desktop\\ReIndex_Cleanup_Log.txt"
 
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "     ReIndex Space Optimization Safe Cleanup Script      " -ForegroundColor Cyan
+Write-Host "     ReIndex Space Optimization Cleanup Script      " -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "Preserving Drive: ${preserveDriveId === 'primary' ? 'First found master file' : preserveDriveId}" -ForegroundColor Yellow
 Write-Host "Logs and reports will be saved to: $LogPath"
-Write-Host "NOTE: Running in SAFE MODE (WhatIf is enabled)." -ForegroundColor Green
 Write-Host "========================================================"\n\n`;
 
     duplicates.forEach((g, idx) => {
@@ -252,13 +289,13 @@ Write-Host "========================================================"\n\n`;
       script += `# Keeping master file location: "${master.FullName}"\n`;
       
       targetDeletes.forEach(target => {
-        script += `Remove-Item -Path "${target.FullName}" -Force -ErrorAction SilentlyContinue -WhatIf\n`;
+        script += `Remove-Item -Path "${target.FullName}" -Force -ErrorAction SilentlyContinue\n`;
       });
       script += `\n`;
     });
 
     script += `Write-Host "========================================================" -ForegroundColor Green
-Write-Host "Cleanup review complete. Change $WhatIfPreference = $false to execute." -ForegroundColor Green
+Write-Host "Cleanup execution complete." -ForegroundColor Green
 Write-Host "========================================================"`;
     return script;
   };
@@ -267,6 +304,103 @@ Write-Host "========================================================"`;
     navigator.clipboard.writeText(generatePowerShellScript());
     setCopiedScript(true);
     setTimeout(() => setCopiedScript(false), 2500);
+  };
+
+  const handleAlreadyCleanUp = async () => {
+    if (duplicates.length === 0 || cleaning) return;
+
+    const selectedCount = selectedFiles.size;
+    if (selectedCount === 0) {
+      alert("Please select at least one redundant file for cleanup.");
+      return;
+    }
+    
+    const proceed = window.confirm(`Are you sure you want to synchronize the catalog and clean up the database index for ${selectedCount} selected redundant file(s)? This action is irreversible.`);
+    if (!proceed) return;
+
+    setCleaning(true);
+    setCleanSuccess(false);
+
+    try {
+      // Calculate files to delete from selected ones
+      const filesToDelete: Array<{ DriveId: string; FullName: string }> = [];
+
+      duplicates.forEach((g) => {
+        let masterIdx = 0;
+        if (preserveDriveId !== 'primary') {
+          const foundIdx = g.occurrences.findIndex(o => o.DriveId === preserveDriveId);
+          if (foundIdx !== -1) masterIdx = foundIdx;
+        }
+        const targetDeletes = g.occurrences.filter((_, i) => i !== masterIdx);
+        targetDeletes.forEach(target => {
+          const key = `${target.DriveId}::${target.FullName}`;
+          if (selectedFiles.has(key)) {
+            filesToDelete.push({
+              DriveId: target.DriveId || '',
+              FullName: target.FullName
+            });
+          }
+        });
+      });
+
+      if (filesToDelete.length === 0) {
+        setCleaning(false);
+        alert("No selected redundant files were found in the current view.");
+        return;
+      }
+
+      if (isOnline) {
+        // Send to API
+        const res = await fetch('/api/duplicates/cleanup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Auth-Token': authToken || ''
+          },
+          body: JSON.stringify({ filesToDelete })
+        });
+
+        if (res.ok) {
+          setCleanSuccess(true);
+          await refreshDrives();
+          await fetchServerDuplicates();
+        } else {
+          const errData = await res.json();
+          alert(`Failed to apply cleanup in database: ${errData.error || 'Unknown error'}`);
+        }
+      } else {
+        // Local offline cleanup
+        const updatedDrives = drives.map(drv => {
+          const targetsOnThisDrive = new Set(
+            filesToDelete.filter(f => f.DriveId === drv.id).map(f => f.FullName)
+          );
+          if (targetsOnThisDrive.size === 0) return drv;
+
+          const updatedItems = drv.items.filter(item => !targetsOnThisDrive.has(item.FullName));
+          const totalSize = updatedItems.reduce((acc, item) => acc + (Number(item.Length) || 0), 0);
+
+          return {
+            ...drv,
+            items: updatedItems,
+            fileCount: updatedItems.length,
+            totalSize
+          };
+        });
+
+        setDrives(updatedDrives);
+        localStorage.setItem('drivecatalog_drives_v1', JSON.stringify(updatedDrives));
+        setCleanSuccess(true);
+        setTimeout(() => {
+          computeLocalDuplicates();
+        }, 100);
+      }
+    } catch (err: any) {
+      console.error('Error applying duplicates cleanup:', err);
+      alert(`Cleanup sync failed: ${err.message}`);
+    } finally {
+      setCleaning(false);
+      setTimeout(() => setCleanSuccess(false), 3000);
+    }
   };
 
   const presetMinSizes = [
@@ -475,6 +609,35 @@ Write-Host "========================================================"`;
               </>
             )}
           </button>
+
+          <button
+            onClick={handleAlreadyCleanUp}
+            disabled={duplicates.length === 0 || cleaning || selectedFiles.size === 0}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+              duplicates.length === 0 || selectedFiles.size === 0
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                : cleanSuccess
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-teal-600 hover:bg-teal-700 text-white'
+            }`}
+          >
+            {cleaning ? (
+              <>
+                <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Syncing Database...</span>
+              </>
+            ) : cleanSuccess ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Index Cleaned!</span>
+              </>
+            ) : (
+              <>
+                <ClipboardCheck className="w-3.5 h-3.5" />
+                <span>Already CleanUp! ({selectedFiles.size} Selected)</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -497,14 +660,40 @@ Write-Host "========================================================"`;
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex items-center justify-between px-2 text-xs font-mono text-slate-400 font-bold uppercase tracking-wider">
-              <span>Duplicate File Match List ({duplicates.length} sets shown)</span>
-              <button 
-                onClick={toggleAllGroups} 
-                className="text-indigo-600 hover:text-indigo-700 font-sans font-semibold text-[11px]"
-              >
-                {expandedGroups.size === duplicates.length ? 'Collapse All' : 'Expand All'}
-              </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 py-2 bg-slate-100 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="global-select-all"
+                  checked={allSelected}
+                  ref={el => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={() => {
+                    if (allSelected) {
+                      setSelectedFiles(new Set());
+                    } else {
+                      setSelectedFiles(new Set(allRedundantKeys));
+                    }
+                  }}
+                  className="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer"
+                />
+                <label htmlFor="global-select-all" className="text-xs font-bold text-slate-700 select-none cursor-pointer">
+                  Select All {allRedundantKeys.length} Redundant Files ({selectedFiles.size} checked)
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between sm:justify-end gap-4">
+                <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider">
+                  ({duplicates.length} sets shown)
+                </span>
+                <button 
+                  onClick={toggleAllGroups} 
+                  className="text-indigo-600 hover:text-indigo-700 font-sans font-semibold text-[11px]"
+                >
+                  {expandedGroups.size === duplicates.length ? 'Collapse All' : 'Expand All'}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2.5">
@@ -512,6 +701,21 @@ Write-Host "========================================================"`;
                 const key = `${g.name}_${g.length}`;
                 const isExpanded = expandedGroups.has(key);
                 const wasteSize = (g.duplicate_count - 1) * g.length;
+
+                // Identify redundant occurrences for this group
+                let masterIdx = 0;
+                if (preserveDriveId !== 'primary') {
+                  const preservationTargetIdx = g.occurrences.findIndex(o => o.DriveId === preserveDriveId);
+                  if (preservationTargetIdx !== -1) {
+                    masterIdx = preservationTargetIdx;
+                  }
+                }
+                const groupRedundantKeys = g.occurrences
+                  .filter((_, idx) => idx !== masterIdx)
+                  .map(occ => `${occ.DriveId}::${occ.FullName}`);
+
+                const allGroupSelected = groupRedundantKeys.length > 0 && groupRedundantKeys.every(k => selectedFiles.has(k));
+                const someGroupSelected = groupRedundantKeys.length > 0 && groupRedundantKeys.some(k => selectedFiles.has(k)) && !allGroupSelected;
 
                 return (
                   <div 
@@ -529,6 +733,28 @@ Write-Host "========================================================"`;
                         <div className="text-slate-400">
                           {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         </div>
+                        
+                        <input
+                          type="checkbox"
+                          checked={allGroupSelected}
+                          ref={el => {
+                            if (el) el.indeterminate = someGroupSelected;
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            const next = new Set(selectedFiles);
+                            if (allGroupSelected) {
+                              groupRedundantKeys.forEach(k => next.delete(k));
+                            } else {
+                              groupRedundantKeys.forEach(k => next.add(k));
+                            }
+                            setSelectedFiles(next);
+                          }}
+                          className="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer shrink-0"
+                          title="Select / deselect all redundant files in this set"
+                        />
+
                         <div className="p-1.5 bg-slate-100 text-slate-500 rounded-lg shrink-0">
                           <Layers className="w-4 h-4 text-slate-500" />
                         </div>
@@ -575,6 +801,9 @@ Write-Host "========================================================"`;
                               }
                             }
 
+                            const occKey = `${occ.DriveId}::${occ.FullName}`;
+                            const isSelected = selectedFiles.has(occKey);
+
                             return (
                               <div 
                                 key={occIdx}
@@ -585,6 +814,23 @@ Write-Host "========================================================"`;
                                 }`}
                               >
                                 <div className="min-w-0 flex-1 flex items-center gap-2.5">
+                                  {!isPreserved && (
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => {
+                                        const next = new Set(selectedFiles);
+                                        if (next.has(occKey)) {
+                                          next.delete(occKey);
+                                        } else {
+                                          next.add(occKey);
+                                        }
+                                        setSelectedFiles(next);
+                                      }}
+                                      className="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer shrink-0"
+                                    />
+                                  )}
+
                                   <div className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border uppercase shrink-0 ${
                                     isPreserved 
                                       ? 'bg-emerald-100 border-emerald-200 text-emerald-800'

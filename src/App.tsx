@@ -147,6 +147,22 @@ export default function App() {
   }, [dbStatus.connected, authToken, currentUser, activeDriveId, filters, drives]);
 
   // --- Load and Store Drives from Database / Cache ---
+  const refreshDrives = React.useCallback(async () => {
+    if (dbStatus.connected && authToken && currentUser) {
+      try {
+        const drivesRes = await fetch('/api/drives', {
+          headers: { 'X-Auth-Token': authToken }
+        });
+        if (drivesRes.ok) {
+          const drivesData = await drivesRes.json();
+          setDrives(drivesData);
+        }
+      } catch (err) {
+        console.error('Failed to refresh drives from server:', err);
+      }
+    }
+  }, [dbStatus.connected, authToken, currentUser]);
+
   React.useEffect(() => {
     async function initData() {
       setDbLoading(true);
@@ -246,20 +262,32 @@ export default function App() {
   };
 
   // --- Drive Operations ---
-  const handleAddDrive = async (newDriveData: Omit<Drive, 'fileCount' | 'totalSize' | 'lastUpdated'>) => {
+  const handleAddDrive = async (newDriveData: Omit<Drive, 'fileCount' | 'totalSize' | 'lastUpdated'> & { skipDbSync?: boolean }) => {
     const now = new Date();
     const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
     const newDrive: Drive = {
       ...newDriveData,
       fileCount: newDriveData.items.length,
-      totalSize: newDriveData.items.reduce((acc, item) => acc + item.Length, 0),
+      totalSize: newDriveData.items.reduce((acc, item) => acc + (Number(item.Length) || 0), 0),
       lastUpdated: timestamp
     };
 
     // Optimistically update frontend state
     const updated = [...drives.filter(d => d.id !== newDrive.id), newDrive];
     setDrives(updated);
+
+    if (newDriveData.skipDbSync) {
+      // Already chunked & uploaded directly to DB, just update local backup cache and set active drive
+      try {
+        localStorage.setItem(STORAGE_KEY_PREFIX, JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      setActiveDriveId(newDrive.id);
+      await refreshDrives();
+      return;
+    }
 
     if (dbStatus.connected && authToken && currentUser) {
       try {
@@ -289,6 +317,36 @@ export default function App() {
     }
 
     setActiveDriveId(newDrive.id); // Auto focus new drive catalog
+  };
+
+  const handleAppendToDrive = async (
+    driveId: string, 
+    newItems: FileItem[], 
+    stats: { fileCount: number; totalSize: number; lastUpdated: string }
+  ) => {
+    const updated = drives.map(d => {
+      if (d.id === driveId) {
+        return {
+          ...d,
+          items: d.items ? [...d.items, ...newItems.map(item => ({ ...item, DriveId: driveId }))] : [],
+          fileCount: stats.fileCount,
+          totalSize: stats.totalSize,
+          lastUpdated: stats.lastUpdated
+        };
+      }
+      return d;
+    });
+
+    setDrives(updated);
+
+    try {
+      localStorage.setItem(STORAGE_KEY_PREFIX, JSON.stringify(updated));
+    } catch (e) {
+      console.warn(e);
+    }
+
+    setActiveDriveId(driveId);
+    await refreshDrives();
   };
 
   const handleDeleteDrive = async (id: string) => {
@@ -503,7 +561,7 @@ export default function App() {
               {dbStatus.connected ? (
                 <>
                   <Cloud className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-                  <span className="font-sans">Vercel Postgres Connected</span>
+                  <span className="font-sans">• Online</span>
                 </>
               ) : (
                 <>
@@ -518,7 +576,7 @@ export default function App() {
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
             >
               <FolderSync className="w-3.5 h-3.5" />
-              <span>Add Hard Drive</span>
+              <span>Add Storage Drive</span>
             </button>
           </div>
         </header>
@@ -547,6 +605,8 @@ export default function App() {
             isOnline={isOnline}
             authToken={authToken}
             currentUser={currentUser}
+            setDrives={setDrives}
+            refreshDrives={refreshDrives}
           />
         ) : (
           <>
@@ -555,6 +615,7 @@ export default function App() {
               activeDrive={activeDrive}
               filteredFiles={filteredFlatFiles}
               allFiles={allFilesCombined}
+              drives={drives}
             />
 
             {/* 4. Global Search filters input dashboard */}
@@ -640,6 +701,10 @@ export default function App() {
         <ImportModal
           onClose={() => setIsImportOpen(false)}
           onImport={handleAddDrive}
+          onAppend={handleAppendToDrive}
+          drives={drives}
+          isOnline={!!isOnline}
+          authToken={authToken}
         />
       )}
     </div>

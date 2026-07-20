@@ -287,11 +287,22 @@ export function filterFlatFiles(
 /**
  * Format bytes into human-readable strings (e.g. GB, TB, MB).
  */
-export function formatBytes(bytes: number, decimals: number = 2): string {
-  if (bytes === 0) return '0 Bytes';
+export function formatBytes(bytes: number | string | null | undefined, decimals: number = 2): string {
+  if (bytes === null || bytes === undefined) return '0 Bytes';
+  const parsedBytes = typeof bytes === 'string' ? parseFloat(bytes) : bytes;
+  if (isNaN(parsedBytes) || !isFinite(parsedBytes)) {
+    return '0 Bytes';
+  }
+  if (parsedBytes <= 0) return '0 Bytes';
+
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  const i = Math.floor(Math.log(parsedBytes) / Math.log(k));
+
+  if (i < 0 || i >= sizes.length || isNaN(i)) {
+    return parsedBytes.toFixed(dm) + ' Bytes';
+  }
+
+  return parseFloat((parsedBytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }

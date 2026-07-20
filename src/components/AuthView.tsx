@@ -124,7 +124,7 @@ export default function AuthView({ onAuthSuccess, onBypass, dbStatus }: AuthView
                 ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' 
                 : 'bg-amber-500/20 border-amber-400/30 text-amber-300'
             }`}>
-              {dbStatus.connected ? 'Vercel Postgres Connected' : 'Local Cache Mode (DB Offline)'}
+              {dbStatus.connected ? '• Online' : 'Local Cache Mode (DB Offline)'}
             </div>
             <h1 className="text-2xl font-bold font-sans tracking-tight">ReIndex Storage Portal</h1>
             <p className="text-slate-400 text-xs font-sans leading-relaxed">

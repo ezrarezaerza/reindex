@@ -55,6 +55,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editName, setEditName] = React.useState('');
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   const handleStartEdit = (drive: Drive, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,8 +76,8 @@ export default function Sidebar({
     setEditingId(null);
   };
 
-  const totalCatalogSize = drives.reduce((acc, d) => acc + d.totalSize, 0);
-  const totalCatalogFiles = drives.reduce((acc, d) => acc + d.fileCount, 0);
+  const totalCatalogSize = drives.reduce((acc, d) => acc + (Number(d.totalSize) || 0), 0);
+  const totalCatalogFiles = drives.reduce((acc, d) => acc + (Number(d.fileCount) || 0), 0);
 
   const getIconComponent = (iconName: string) => {
     switch (iconName) {
@@ -182,6 +183,147 @@ export default function Sidebar({
             </div>
           </button>
 
+          {/* Drive Catalog Cards */}
+          {drives.map((drive) => {
+            const isActive = activeDriveId === drive.id && !showDuplicates && !showExportSync && !showCollections;
+            const Icon = getIconComponent(drive.icon);
+            const style = colorMap[drive.color] || colorMap.blue;
+            const isEditing = editingId === drive.id;
+
+            return (
+              <div
+                key={drive.id}
+                onClick={() => {
+                  if (!isEditing) {
+                    setActiveDriveId(drive.id);
+                    setShowDuplicates(false);
+                    setShowExportSync(false);
+                    setShowCollections(false);
+                  }
+                }}
+                className={`group relative w-full text-left p-3 rounded-xl transition-all duration-200 border cursor-pointer ${
+                  isActive
+                    ? 'bg-slate-100/80 border-slate-200 shadow-sm'
+                    : 'bg-transparent border-transparent hover:bg-slate-50'
+                }`}
+                id={`drive-card-${drive.id}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className={`p-2 rounded-lg shrink-0 ${
+                      isActive ? `${style.bg} ${style.text}` : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+
+                    <div className="flex-1 min-w-0 pr-6">
+                      {isEditing ? (
+                        <div className="flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveEdit(drive.id, e as any);
+                              if (e.key === 'Escape') handleCancelEdit(e as any);
+                            }}
+                            className="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full font-sans"
+                            autoFocus
+                          />
+                          <button
+                            onClick={(e) => handleSaveEdit(drive.id, e)}
+                            className="p-1 hover:bg-emerald-100 text-emerald-600 rounded"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1 hover:bg-rose-100 text-rose-600 rounded"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : deletingId === drive.id ? (
+                        <div className="flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[11px] font-bold text-rose-600 font-sans leading-tight">Delete entire catalog?</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteDrive(drive.id);
+                                setDeletingId(null);
+                              }}
+                              className="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold rounded cursor-pointer transition-colors shadow-xs"
+                              id={`confirm-delete-yes-${drive.id}`}
+                            >
+                              Yes, Delete
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingId(null);
+                              }}
+                              className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-650 text-[10px] font-bold rounded border border-slate-250 cursor-pointer transition-colors shadow-xs"
+                              id={`confirm-delete-no-${drive.id}`}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-sm font-semibold truncate ${
+                            isActive ? 'text-slate-800' : 'text-slate-600 group-hover:text-slate-800'
+                          }`}>
+                            {drive.name}
+                          </span>
+                          <span className={`text-[10px] uppercase font-bold font-mono px-1.5 py-0.2 rounded border ${style.bg} ${style.text} ${style.border}`}>
+                            {drive.letter}:
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        <div className="text-[11px] font-mono text-slate-500 flex items-center justify-between">
+                          <span>{drive.fileCount.toLocaleString()} files</span>
+                          <span>{formatBytes(drive.totalSize, 1)}</span>
+                        </div>
+                        <div className="text-[9px] font-mono text-slate-400 mt-1">
+                          Last sync: {drive.lastUpdated}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Settings / Edit Trigger for Drive (Shown on Hover) */}
+                  {!isEditing && deletingId !== drive.id && (
+                    <div className="absolute right-2.5 top-2.5 hidden group-hover:flex items-center gap-1 bg-white p-1 rounded-md border border-slate-200 shadow-sm">
+                      <button
+                        onClick={(e) => handleStartEdit(drive, e)}
+                        className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-50 transition-colors"
+                        title="Rename drive"
+                        id={`edit-drive-${drive.id}`}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingId(drive.id);
+                        }}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-50 transition-colors"
+                        title="Remove catalog"
+                        id={`delete-drive-${drive.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
           {/* Space Optimizer Toggle */}
           <button
             onClick={() => {
@@ -276,126 +418,10 @@ export default function Sidebar({
                 <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Custom tags &amp; grouping</p>
               </div>
             </div>
-            <span className="text-[10px] bg-indigo-100 text-indigo-850 font-bold px-1.5 py-0.5 rounded font-sans scale-90">
+            <span className="text-[10px] bg-indigo-100 text-indigo-855 font-bold px-1.5 py-0.5 rounded font-sans scale-90">
               LABELS
             </span>
           </button>
-
-          {/* Drive Catalog Cards */}
-          {drives.map((drive) => {
-            const isActive = activeDriveId === drive.id && !showDuplicates && !showExportSync && !showCollections;
-            const Icon = getIconComponent(drive.icon);
-            const style = colorMap[drive.color] || colorMap.blue;
-            const isEditing = editingId === drive.id;
-
-            return (
-              <div
-                key={drive.id}
-                onClick={() => {
-                  if (!isEditing) {
-                    setActiveDriveId(drive.id);
-                    setShowDuplicates(false);
-                    setShowExportSync(false);
-                    setShowCollections(false);
-                  }
-                }}
-                className={`group relative w-full text-left p-3 rounded-xl transition-all duration-200 border cursor-pointer ${
-                  isActive
-                    ? 'bg-slate-100/80 border-slate-200 shadow-sm'
-                    : 'bg-transparent border-transparent hover:bg-slate-50'
-                }`}
-                id={`drive-card-${drive.id}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className={`p-2 rounded-lg shrink-0 ${
-                      isActive ? `${style.bg} ${style.text}` : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-
-                    <div className="flex-1 min-w-0 pr-6">
-                      {isEditing ? (
-                        <div className="flex items-center gap-1.5 mt-0.5" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit(drive.id, e as any);
-                              if (e.key === 'Escape') handleCancelEdit(e as any);
-                            }}
-                            className="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full font-sans"
-                            autoFocus
-                          />
-                          <button
-                            onClick={(e) => handleSaveEdit(drive.id, e)}
-                            className="p-1 hover:bg-emerald-100 text-emerald-600 rounded"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="p-1 hover:bg-rose-100 text-rose-600 rounded"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-sm font-semibold truncate ${
-                            isActive ? 'text-slate-800' : 'text-slate-600 group-hover:text-slate-800'
-                          }`}>
-                            {drive.name}
-                          </span>
-                          <span className={`text-[10px] uppercase font-bold font-mono px-1.5 py-0.2 rounded border ${style.bg} ${style.text} ${style.border}`}>
-                            {drive.letter}:
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex flex-col gap-0.5 mt-1">
-                        <div className="text-[11px] font-mono text-slate-500 flex items-center justify-between">
-                          <span>{drive.fileCount.toLocaleString()} files</span>
-                          <span>{formatBytes(drive.totalSize, 1)}</span>
-                        </div>
-                        <div className="text-[9px] font-mono text-slate-400 mt-1">
-                          Last sync: {drive.lastUpdated}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Settings / Edit Trigger for Drive (Shown on Hover) */}
-                  {!isEditing && (
-                    <div className="absolute right-2.5 top-2.5 hidden group-hover:flex items-center gap-1 bg-white p-1 rounded-md border border-slate-200 shadow-sm">
-                      <button
-                        onClick={(e) => handleStartEdit(drive, e)}
-                        className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-50 transition-colors"
-                        title="Rename drive"
-                        id={`edit-drive-${drive.id}`}
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Are you sure you want to remove the database catalog for "${drive.name}"?`)) {
-                            onDeleteDrive(drive.id);
-                          }
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-50 transition-colors"
-                        title="Remove catalog"
-                        id={`delete-drive-${drive.id}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
         </div>
       </div>
 
@@ -408,7 +434,7 @@ export default function Sidebar({
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-700 truncate font-sans">{currentUser.username}</p>
-              <p className="text-[9px] text-indigo-600 font-bold tracking-wide uppercase font-sans">Synced Member</p>
+              <p className="text-[9px] text-indigo-600 font-bold tracking-wide uppercase font-sans">Active Member</p>
             </div>
           </div>
           <button

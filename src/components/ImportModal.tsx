@@ -20,6 +20,7 @@ import {
   Plus,
   FolderPlus
 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -604,22 +605,33 @@ export default function ImportModal({
   const selectedThemeColor = colorLabels[color] || 'bg-indigo-500 text-indigo-600';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200" id="import-modal-overlay">
-      {/* Light backdrop */}
-      <div onClick={uploadState === 'idle' || uploadState === 'failed' ? onClose : undefined} className="absolute inset-0 bg-slate-500/30 backdrop-blur-xs cursor-pointer"></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" id="import-modal-overlay">
+      {/* Light/Dark backdrop */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        onClick={uploadState === 'idle' || uploadState === 'failed' ? onClose : undefined} 
+        className="absolute inset-0 bg-slate-500/35 dark:bg-slate-950/70 backdrop-blur-xs cursor-pointer"
+      />
 
       {/* Dialog Frame */}
-      <div 
-        className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-200"
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 10 }}
+        transition={{ type: "spring", damping: 26, stiffness: 260 }}
+        className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
         id="import-modal-box"
       >
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950 shrink-0">
           <div className="flex items-center gap-2.5">
-            <FileJson className="w-5 h-5 text-indigo-600" />
+            <FileJson className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <div>
-              <h3 className="font-bold text-slate-850 text-base">Import External Hard Drive Catalog</h3>
-              <p className="text-[11px] text-slate-500">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">Import External Hard Drive Catalog</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {uploadState === 'idle' 
                   ? 'Add custom PowerShell outputs to your local index' 
                   : 'Syncing file records directly with Vercel Postgres'}
@@ -629,7 +641,7 @@ export default function ImportModal({
           {(uploadState === 'idle' || uploadState === 'failed') && (
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -637,32 +649,32 @@ export default function ImportModal({
         </div>
 
         {/* Scroll Body */}
-        <div className="flex-1 overflow-y-auto p-6 bg-white flex flex-col justify-between">
+        <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-900 flex flex-col justify-between">
           
           {uploadState === 'idle' ? (
             <div className="space-y-6">
               {/* Section 1: PowerShell Instructions */}
-              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3.5" id="powershell-instructions">
-                <h4 className="text-xs font-mono font-bold text-indigo-700 flex items-center gap-1.5 uppercase tracking-wide">
+              <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-3.5" id="powershell-instructions">
+                <h4 className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5 uppercase tracking-wide">
                   <Terminal className="w-4 h-4" />
                   <span>How to generate the JSON catalog?</span>
                 </h4>
-                <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans">
                   To catalog your external drive, open <strong>Windows PowerShell</strong> and run the command below. It scans your drive and exports a flat JSON containing filenames and metadata.
                 </p>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 font-semibold">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">
                     <span>Select Target Drive Letter: </span>
-                    <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded border border-slate-200">
+                    <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 px-2 py-1 rounded border border-slate-200 dark:border-slate-800">
                       {['D', 'E', 'F', 'G', 'H', 'I'].map(char => (
                         <button
                           key={char}
                           onClick={() => setLetter(char)}
-                          className={`w-5 h-5 text-[10px] font-bold rounded flex items-center justify-center transition-all ${
+                          className={`w-5 h-5 text-[10px] font-bold rounded flex items-center justify-center transition-all cursor-pointer ${
                             letter === char
                               ? 'bg-indigo-600 text-white shadow shadow-indigo-600/20 font-bold'
-                              : 'text-slate-500 hover:text-slate-700'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                           }`}
                         >
                           {char}
@@ -672,19 +684,19 @@ export default function ImportModal({
                   </div>
                   
                   <div className="relative">
-                    <div className="p-3 bg-white border border-slate-200 rounded-xl font-mono text-[10px] text-slate-600 leading-normal select-all whitespace-pre-wrap break-all pr-12 max-h-[100px] overflow-y-auto font-medium">
+                    <div className="p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-mono text-[10px] text-slate-600 dark:text-slate-400 leading-normal select-all whitespace-pre-wrap break-all pr-12 max-h-[100px] overflow-y-auto font-medium">
                       {powershellCommand}
                     </div>
                     <button
                       onClick={copyPowershell}
-                      className="absolute top-2.5 right-2.5 p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg transition-all"
+                      className="absolute top-2.5 right-2.5 p-1.5 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-lg transition-all cursor-pointer"
                       title="Copy PowerShell script snippet"
                     >
                       {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
-                <p className="text-[10px] italic text-slate-400 leading-relaxed font-medium">
+                <p className="text-[10px] italic text-slate-400 dark:text-slate-500 leading-relaxed font-medium">
                   Note: -Recurse scans all subfolders. For massive drives (100k+ files), this might take a few minutes to finish.
                 </p>
               </div>
@@ -694,16 +706,16 @@ export default function ImportModal({
                 
                 {/* Step 2: Upload / Paste JSON */}
                 <div className="space-y-2">
-                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                     Step 2: Upload or Paste Catalog JSON
                   </label>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* File picker */}
-                    <div className="border border-dashed border-slate-200 hover:border-indigo-500 rounded-2xl p-5 flex flex-col items-center justify-center text-center transition-colors relative group bg-slate-50/50">
+                     {/* File picker */}
+                    <div className="border border-dashed border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 rounded-2xl p-5 flex flex-col items-center justify-center text-center transition-colors relative group bg-slate-50/50 dark:bg-slate-950/20">
                       <Upload className="w-8 h-8 text-slate-400 group-hover:text-indigo-600 mb-2 transition-colors" />
-                      <span className="text-xs text-slate-700 font-bold">Upload catalog .json file</span>
-                      <p className="text-[10px] text-slate-400 mt-1 max-w-[180px] font-medium">Select drive_catalog.json file generated from PowerShell</p>
+                      <span className="text-xs text-slate-700 dark:text-slate-300 font-bold">Upload catalog .json file</span>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 max-w-[180px] font-medium">Select drive_catalog.json file generated from PowerShell</p>
                       <input
                         type="file"
                         accept=".json"
@@ -721,33 +733,33 @@ export default function ImportModal({
                            setJsonPaste(e.target.value);
                            handleValidateJSON(e.target.value);
                         }}
-                        className="w-full h-32 p-3 bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-2xl text-xs text-slate-750 placeholder-slate-400 focus:outline-none font-mono resize-none shadow-inner"
+                        className="w-full h-32 p-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-2xl text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none font-mono resize-none shadow-inner"
                       ></textarea>
                     </div>
                   </div>
 
                   {/* Status and valid errors */}
                   {validationError && (
-                    <div className="p-3.5 bg-rose-50 border border-rose-250 text-rose-700 text-xs rounded-xl flex items-start gap-2 animate-in slide-in-from-top duration-150 font-semibold">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                    <div className="p-3.5 bg-rose-50 dark:bg-rose-950/25 border border-rose-250 dark:border-rose-900/55 text-rose-700 dark:text-rose-400 text-xs rounded-xl flex items-start gap-2 animate-in slide-in-from-top duration-150 font-semibold">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
                       <span>{validationError}</span>
                     </div>
                   )}
 
                   {successCount !== null && (
-                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2 animate-in slide-in-from-top duration-150 font-semibold">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                    <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/25 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs rounded-xl flex items-center gap-2 animate-in slide-in-from-top duration-150 font-semibold">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                       <span>Successfully validated <strong className="font-mono">{successCount.toLocaleString()}</strong> file indices. Complete step 3 to add this storage catalog.</span>
                     </div>
                   )}
                 </div>
 
                 {/* Step 2.5: Choose Catalog Target Mode */}
-                <div className="space-y-3 pt-2 border-t border-slate-200">
-                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                     Choose Catalog Target Mode
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 p-1.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 p-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl">
                     <button
                       type="button"
                       onClick={() => {
@@ -762,7 +774,7 @@ export default function ImportModal({
                       className={`py-2.5 px-4 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 ${
                         importMode === 'create'
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                          : 'text-slate-600 hover:text-slate-850 hover:bg-slate-150'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -787,7 +799,7 @@ export default function ImportModal({
                       className={`py-2.5 px-4 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 ${
                         importMode === 'append'
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                          : 'text-slate-600 hover:text-slate-850 hover:bg-slate-150 disabled:hover:bg-transparent'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:hover:bg-transparent dark:disabled:hover:bg-transparent'
                       } disabled:opacity-40 disabled:cursor-not-allowed`}
                       title={(!drives || drives.length === 0) ? "No existing storage catalogs to append to" : "Select an existing catalog to append files to"}
                     >
@@ -798,14 +810,14 @@ export default function ImportModal({
                 </div>
 
                 {/* Step 3: Drive properties config */}
-                <div className="space-y-4 pt-2 border-t border-slate-200">
-                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                     {importMode === 'create' ? 'Step 3: Drive Profile Customization' : 'Step 3: Target Catalog Details (Read Only)'}
                   </label>
 
                   {importMode === 'append' && (
                     <div className="space-y-1.5">
-                      <span className="text-[11px] text-slate-500 font-bold block">Select Target Storage Catalog to Append To</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">Select Target Storage Catalog to Append To</span>
                       <select
                         value={targetDriveId}
                         onChange={(e) => {
@@ -820,12 +832,12 @@ export default function ImportModal({
                             setDescription(targetDrive.description || '');
                           }
                         }}
-                        className="w-full bg-white border border-slate-250 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none transition-all font-sans cursor-pointer font-semibold shadow-xs"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none transition-all font-sans cursor-pointer font-semibold shadow-xs"
                         required={importMode === 'append'}
                       >
                         <option value="" disabled>-- Select an existing storage catalog --</option>
                         {drives.map(drive => (
-                          <option key={drive.id} value={drive.id}>
+                          <option key={drive.id} value={drive.id} className="dark:bg-slate-950">
                             {drive.name} ({drive.letter}:\\) — {drive.fileCount?.toLocaleString() || 0} files
                           </option>
                         ))}
@@ -836,13 +848,13 @@ export default function ImportModal({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Drive Name / Label */}
                     <div className="space-y-1.5">
-                      <span className="text-[11px] text-slate-500 font-bold">Drive Display Name</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Drive Display Name</span>
                       <input
                         type="text"
                         placeholder="e.g. Work Backups HDD"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className={`w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-sans ${importMode === 'append' ? 'bg-slate-50 text-slate-500 border-slate-150 cursor-not-allowed font-medium' : ''}`}
+                        className={`w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-3.5 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none transition-all font-sans ${importMode === 'append' ? 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 cursor-not-allowed font-medium' : ''}`}
                         required
                         disabled={importMode === 'append'}
                       />
@@ -850,7 +862,7 @@ export default function ImportModal({
 
                     {/* Theme colors */}
                     <div className="space-y-1.5">
-                      <span className="text-[11px] text-slate-500 font-bold">Styling Theme Accent</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Styling Theme Accent</span>
                       <div className="flex items-center gap-2 h-9">
                         {colors.map(col => (
                           <button
@@ -860,7 +872,7 @@ export default function ImportModal({
                             onClick={() => setColor(col)}
                             className={`w-6 h-6 rounded-full transition-all flex items-center justify-center ${colorLabels[col].split(' ')[0]} ${
                               color === col
-                                ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white scale-110 shadow-md'
+                                ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 scale-110 shadow-md'
                                 : 'hover:scale-105 opacity-60 hover:opacity-100 disabled:opacity-40 disabled:scale-100'
                             } ${importMode === 'append' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                             title={`Accent Color ${col}`}
@@ -873,8 +885,8 @@ export default function ImportModal({
 
                     {/* Icon option selection */}
                     <div className="space-y-1.5">
-                      <span className="text-[11px] text-slate-500 font-bold">Hardware Storage Icon</span>
-                      <div className="flex items-center gap-2 bg-slate-55 p-1.5 rounded-xl border border-slate-200">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Hardware Storage Icon</span>
+                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
                         {[
                           { key: 'hard-drive', icon: HardDrive, label: 'HDD' },
                           { key: 'database', icon: Database, label: 'SSD' },
@@ -892,8 +904,8 @@ export default function ImportModal({
                               onClick={() => setIcon(opt.key as any)}
                               className={`flex-1 py-1 px-2 rounded-lg flex flex-col items-center gap-1 transition-all border ${
                                 isSel
-                                  ? 'bg-white border-slate-250 text-indigo-600 shadow-xs font-semibold'
-                                  : 'border-transparent text-slate-400 hover:text-slate-650 hover:bg-slate-100 disabled:hover:bg-transparent'
+                                  ? 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 shadow-xs font-semibold'
+                                  : 'border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:hover:bg-transparent'
                               } ${importMode === 'append' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                               title={opt.label}
                             >
@@ -907,34 +919,32 @@ export default function ImportModal({
 
                     {/* Description */}
                     <div className="space-y-1.5">
-                      <span className="text-[11px] text-slate-500 font-bold">Description Memo (Optional)</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">Description Memo (Optional)</span>
                       <input
                         type="text"
                         placeholder="e.g. 2TB expansion disk containing legacy software"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className={`w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-sans ${importMode === 'append' ? 'bg-slate-50 text-slate-500 border-slate-150 cursor-not-allowed font-medium' : ''}`}
+                        className={`w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none transition-all font-sans ${importMode === 'append' ? 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 cursor-not-allowed font-medium' : ''}`}
                         disabled={importMode === 'append'}
                       />
                     </div>
                   </div>
-                </div>
-
-                {/* Step 3.5: Upload Pipeline Engine Selection */}
-                <div className="space-y-3 pt-3 border-t border-slate-200">
+                </div>                 {/* Step 3.5: Upload Pipeline Engine Selection */}
+                <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[11px] text-slate-500 font-bold block">Upload Pipeline Engine</span>
-                      <p className="text-[10px] text-slate-400">Choose how database file insertion transactions are structured.</p>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold block">Upload Pipeline Engine</span>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500">Choose how database file insertion transactions are structured.</p>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 p-1 rounded-xl">
+                    <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-1 rounded-xl">
                       <button
                         type="button"
                         onClick={() => setUseChunked(true)}
                         className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
                           useChunked
                             ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-500 hover:text-slate-700'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                         }`}
                       >
                         Segmented Chunker (Robust)
@@ -945,7 +955,7 @@ export default function ImportModal({
                         className={`px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
                           !useChunked
                             ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-500 hover:text-slate-700'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                         }`}
                       >
                         Direct Upload (Fast)
@@ -955,18 +965,18 @@ export default function ImportModal({
                 </div>
 
                 {/* Submission Actions Row */}
-                <div className="p-4 bg-slate-55 border-t border-slate-200 rounded-b-2xl flex items-center justify-end gap-3 pt-4 shrink-0">
+                <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border-t border-slate-200 dark:border-slate-800 rounded-b-2xl flex items-center justify-end gap-3 pt-4 shrink-0">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-850 text-xs font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer shadow-xs"
+                    className="px-4 py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer shadow-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={importedItems.length === 0}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-250 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl tracking-wide transition-all shadow-xs cursor-pointer"
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-slate-950 disabled:text-slate-400 dark:disabled:text-slate-600 disabled:border-slate-300 dark:disabled:border-slate-800 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl tracking-wide transition-all shadow-xs cursor-pointer"
                   >
                     {importMode === 'create' ? 'Assemble & Add to Index' : 'Append to Existing Catalog'}
                   </button>
@@ -980,14 +990,14 @@ export default function ImportModal({
               
               {uploadState === 'initializing' && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-indigo-50 text-indigo-600 rounded-full w-14 h-14 flex items-center justify-center animate-pulse mx-auto">
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full w-14 h-14 flex items-center justify-center animate-pulse mx-auto">
                     <Database className="w-7 h-7" />
                   </div>
-                  <h4 className="text-sm font-bold text-slate-800">Initializing Remote Partition</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Initializing Remote Partition</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                     Contacting Postgres database to instantiate drive profile and reset older files map.
                   </p>
-                  <Loader2 className="w-5 h-5 text-indigo-600 animate-spin mx-auto mt-2" />
+                  <Loader2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin mx-auto mt-2" />
                 </div>
               )}
 
@@ -995,23 +1005,23 @@ export default function ImportModal({
                 <div className="w-full space-y-6">
                   {/* Status Indicator */}
                   <div className="space-y-1">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-full w-12 h-12 flex items-center justify-center animate-spin mx-auto">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-405 rounded-full w-12 h-12 flex items-center justify-center animate-spin mx-auto">
                       <Activity className="w-6 h-6" />
                     </div>
-                    <h4 className="text-sm font-bold text-slate-800">Uploading File Indices...</h4>
-                    <p className="text-[11px] text-slate-400 font-mono">
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Uploading File Indices...</h4>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                       Segmenting {importedItems.length.toLocaleString()} indices into chunks to bypass server limits
                     </p>
                   </div>
 
                   {/* High Fidelity Progress Bar */}
                   <div className="space-y-2 max-w-md mx-auto">
-                    <div className="flex justify-between items-center text-xs text-slate-500 font-semibold font-mono">
+                    <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 font-semibold font-mono">
                       <span>{completedChunks} / {totalChunks} Chunks Sent</span>
                       <span className={selectedThemeColor.split(' ')[1]}>{uploadPercent}%</span>
                     </div>
                     
-                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-100 dark:bg-slate-950 h-2.5 rounded-full overflow-hidden">
                       <div 
                         className={`h-full transition-all duration-300 ${selectedThemeColor.split(' ')[0]}`}
                         style={{ width: `${uploadPercent}%` }}
@@ -1020,38 +1030,38 @@ export default function ImportModal({
                   </div>
 
                   {/* Real-time statistics Grid */}
-                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto bg-slate-50 border border-slate-150 p-4 rounded-2xl">
+                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl">
                     <div className="text-center">
-                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 block">Uploaded Files</span>
-                      <span className="text-sm font-extrabold text-slate-750 font-mono mt-0.5 block">
+                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 dark:text-slate-500 block">Uploaded Files</span>
+                      <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200 font-mono mt-0.5 block">
                         {uploadedFilesCount.toLocaleString()} / {importedItems.length.toLocaleString()}
                       </span>
                     </div>
-                    <div className="text-center border-l border-slate-200">
-                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 block">Transfer Speed</span>
-                      <span className="text-sm font-extrabold text-slate-750 font-mono mt-0.5 block">
+                    <div className="text-center border-l border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 dark:text-slate-500 block">Transfer Speed</span>
+                      <span className="text-sm font-extrabold text-slate-700 dark:text-slate-200 font-mono mt-0.5 block">
                         {uploadSpeed > 0 ? `${uploadSpeed.toLocaleString()} files/sec` : 'Calculating...'}
                       </span>
                     </div>
-                    <div className="text-center border-t border-slate-200 pt-3 col-span-2">
-                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 block">Estimated Time Remaining</span>
-                      <span className="text-sm font-extrabold text-indigo-600 font-mono mt-0.5 block">
+                    <div className="text-center border-t border-slate-200 dark:border-slate-800 pt-3 col-span-2">
+                      <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-slate-400 dark:text-slate-500 block">Estimated Time Remaining</span>
+                      <span className="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 font-mono mt-0.5 block">
                         {eta === null ? 'Calculating...' : eta === 0 ? 'Finishing up...' : `${eta} seconds`}
                       </span>
                     </div>
                   </div>
 
                   {/* Parallel Workers Monitor (Phase 2 & 3 Concurrency Monitor) */}
-                  <div className="max-w-md mx-auto border border-slate-200 rounded-xl overflow-hidden bg-white text-left">
-                    <div className="bg-slate-50 border-b border-slate-200 px-3.5 py-1.5 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                  <div className="max-w-md mx-auto border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900 text-left">
+                    <div className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-3.5 py-1.5 flex items-center justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                       <span>Concurrent Worker Status (Queue Controller)</span>
-                      <span className="text-indigo-600 font-mono">3 workers active</span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-mono">3 workers active</span>
                     </div>
-                    <div className="divide-y divide-slate-100 p-1">
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800 p-1">
                       {workerStates.map((status, idx) => (
                         <div key={idx} className="px-3 py-2 flex items-center justify-between text-xs font-mono">
-                          <span className="text-slate-400 font-medium">Worker {idx + 1}:</span>
-                          <span className="text-slate-700 truncate max-w-[280px] font-semibold">{status}</span>
+                          <span className="text-slate-400 dark:text-slate-500 font-medium">Worker {idx + 1}:</span>
+                          <span className="text-slate-700 dark:text-slate-300 truncate max-w-[280px] font-semibold">{status}</span>
                         </div>
                       ))}
                     </div>
@@ -1061,36 +1071,36 @@ export default function ImportModal({
 
               {uploadState === 'completed' && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-emerald-50 text-emerald-600 rounded-full w-14 h-14 flex items-center justify-center mx-auto">
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-full w-14 h-14 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h4 className="text-base font-bold text-slate-800">Sync Completed Successfully!</h4>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">Sync Completed Successfully!</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                     All <strong className="font-mono">{importedItems.length.toLocaleString()}</strong> indices have been parsed, split, and written into the main index safely.
                   </p>
-                  <p className="text-[11px] text-slate-400">Updating client view...</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Updating client view...</p>
                 </div>
               )}
 
               {uploadState === 'failed' && (
                 <div className="w-full space-y-5">
-                  <div className="p-4 bg-rose-50 text-rose-600 rounded-full w-14 h-14 flex items-center justify-center mx-auto">
+                  <div className="p-4 bg-rose-50 dark:bg-rose-950/45 text-rose-600 dark:text-rose-450 rounded-full w-14 h-14 flex items-center justify-center mx-auto">
                     <AlertCircle className="w-8 h-8" />
                   </div>
-                  <h4 className="text-base font-bold text-slate-800">Upload Interrupt Error</h4>
+                  <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">Upload Interrupt Error</h4>
                   
-                  <div className="p-4 bg-rose-50/50 border border-rose-200 rounded-xl text-left text-xs max-w-md mx-auto font-mono text-rose-700 leading-relaxed whitespace-pre-wrap">
+                  <div className="p-4 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl text-left text-xs max-w-md mx-auto font-mono text-rose-700 dark:text-rose-400 leading-relaxed whitespace-pre-wrap">
                     {errorMessage || 'Unknown database payload failure.'}
                   </div>
 
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                     Server limits or network drops interrupted chunk transfers. You can retry safely; the backend database keeps previous transactions intact.
                   </p>
 
                   <div className="flex items-center justify-center gap-3 pt-2">
                     <button
                       onClick={onClose}
-                      className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-850 text-xs font-semibold rounded-xl border border-slate-200 transition-colors cursor-pointer shadow-xs"
+                      className="px-4 py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer shadow-xs"
                     >
                       Close Window
                     </button>
@@ -1116,7 +1126,7 @@ export default function ImportModal({
           )}
 
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

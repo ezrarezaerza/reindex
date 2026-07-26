@@ -412,30 +412,30 @@ Write-Host "========================================================"`;
   ];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden" id="space-optimizer-viewport">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden" id="space-optimizer-viewport">
       
       {/* 1. Header & Quick Info */}
-      <div className="px-6 py-5 bg-white border-b border-slate-200 shrink-0" id="optimizer-header">
+      <div className="px-6 py-5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0" id="optimizer-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-              <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" />
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
+              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <span>Cross-Drive Duplicate Finder</span>
-                <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded font-mono">
+                <span className="text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 font-bold px-2 py-0.5 rounded font-mono">
                   Space Optimizer
                 </span>
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Scan multiple hard drive partition mappings to discover perfect replica files wasting physical storage space.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">
               {isOnline ? '🚀 DB Indexed Mode (Ultra-Fast)' : '📦 Local Memory Mode (Offline Cache)'}
             </span>
           </div>
@@ -443,7 +443,7 @@ Write-Host "========================================================"`;
       </div>
 
       {/* 2. Bento Stats Reclaim Indicators */}
-      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 shrink-0" id="optimizer-stats">
+      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-950 shrink-0" id="optimizer-stats">
         {/* Potentially Saved Space */}
         <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-4 rounded-2xl text-white border border-indigo-950/20 shadow-md relative overflow-hidden">
           <div className="absolute right-2.5 bottom-2.5 opacity-5 pointer-events-none">
@@ -461,35 +461,35 @@ Write-Host "========================================================"`;
         </div>
 
         {/* Duplicate Sets */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold block">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-550 uppercase tracking-wider font-bold block">
             Redundant File Sets
           </span>
-          <div className="text-2xl font-bold mt-1 font-mono text-slate-800">
+          <div className="text-2xl font-bold mt-1 font-mono text-slate-800 dark:text-slate-100">
             {stats.totalGroups}
           </div>
-          <p className="text-[10px] text-slate-500 mt-2 font-sans flex items-center gap-1">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-sans flex items-center gap-1">
             <Info className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
             <span>Files matching exact Name and size.</span>
           </p>
         </div>
 
         {/* Total redundant duplicates */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-bold block">
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-550 uppercase tracking-wider font-bold block">
             Removable Clones
           </span>
-          <div className="text-2xl font-bold mt-1 font-mono text-emerald-600">
+          <div className="text-2xl font-bold mt-1 font-mono text-emerald-600 dark:text-emerald-400">
             {stats.totalRedundantFiles.toLocaleString()}
           </div>
-          <p className="text-[10px] text-slate-500 mt-2 font-sans">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-sans">
             Extra file copies currently sitting across different folders or volumes.
           </p>
         </div>
       </div>
 
       {/* 3. Search Filters Row */}
-      <div className="px-6 py-4 border-y border-slate-200 bg-white flex flex-wrap items-center gap-4 shrink-0" id="optimizer-filters">
+      <div className="px-6 py-4 border-y border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center gap-4 shrink-0" id="optimizer-filters">
         {/* Name Search */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -498,25 +498,25 @@ Write-Host "========================================================"`;
             placeholder="Search duplicates by file name..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-sans"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all font-sans"
           />
         </div>
 
         {/* Preset Min Size Filter */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <Filter className="w-3.5 h-3.5" />
             Size:
           </span>
-          <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+          <div className="flex rounded-lg border border-slate-200 dark:border-slate-800 p-0.5 bg-slate-50 dark:bg-slate-950">
             {presetMinSizes.map((preset) => (
               <button
                 key={preset.value}
                 onClick={() => setMinSize(preset.value)}
-                className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-colors cursor-pointer ${
                   minSize === preset.value
-                    ? 'bg-white text-slate-800 shadow-xs border border-slate-200/50'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-250 shadow-xs border border-slate-200/50 dark:border-slate-850'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
                 }`}
               >
                 {preset.label}
@@ -527,15 +527,15 @@ Write-Host "========================================================"`;
 
         {/* Extension Dropdown */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-slate-500">Extension:</span>
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Extension:</span>
           <select
             value={extension}
             onChange={(e) => setExtension(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
           >
-            <option value="">All Extensions</option>
+            <option value="" className="dark:bg-slate-950">All Extensions</option>
             {availableExtensions.map((ext) => (
-              <option key={ext} value={ext}>
+              <option key={ext} value={ext} className="dark:bg-slate-950">
                 {ext.toUpperCase()}
               </option>
             ))}
@@ -544,42 +544,42 @@ Write-Host "========================================================"`;
 
         {/* Results limit */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs font-medium text-slate-500">Show:</span>
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Show:</span>
           <select
             value={limit}
             onChange={(e) => setLimit(e.target.value)}
-            className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 focus:outline-none"
+            className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-300 focus:outline-none cursor-pointer"
           >
-            <option value="50">Top 50</option>
-            <option value="100">Top 100</option>
-            <option value="200">Top 200</option>
+            <option value="50" className="dark:bg-slate-950">Top 50</option>
+            <option value="100" className="dark:bg-slate-950">Top 100</option>
+            <option value="200" className="dark:bg-slate-950">Top 200</option>
           </select>
         </div>
       </div>
 
       {/* 4. Action Bar / Script Generator Panel */}
-      <div className="px-6 py-3.5 bg-indigo-50/50 border-b border-indigo-100 flex flex-wrap items-center justify-between gap-3 shrink-0" id="script-generator-panel">
+      <div className="px-6 py-3.5 bg-indigo-50/50 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/40 flex flex-wrap items-center justify-between gap-3 shrink-0" id="script-generator-panel">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 bg-indigo-100 text-indigo-700 rounded-lg">
+          <div className="p-1.5 bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 rounded-lg">
             <FileCode className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-xs font-semibold text-indigo-900">Physical Cleanup Assistant</div>
-            <div className="text-[10px] text-indigo-700 font-medium">Generate scripts or reports to clean up targeted duplicates in physical Explorer.</div>
+            <div className="text-xs font-semibold text-indigo-900 dark:text-indigo-300">Physical Cleanup Assistant</div>
+            <div className="text-[10px] text-indigo-700 dark:text-indigo-450 font-medium">Generate scripts or reports to clean up targeted duplicates in physical Explorer.</div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-slate-600">Preserve Master Drive:</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Preserve Master Drive:</span>
             <select
               value={preserveDriveId}
               onChange={(e) => setPreserveDriveId(e.target.value)}
-              className="px-2 py-1 bg-white border border-indigo-200 rounded-md text-[11px] text-slate-700 focus:outline-none font-semibold focus:ring-1 focus:ring-indigo-500"
+              className="px-2 py-1 bg-white dark:bg-slate-950 border border-indigo-200 dark:border-slate-800 rounded-md text-[11px] text-slate-700 dark:text-slate-300 focus:outline-none font-semibold focus:ring-1 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value="primary">Preserve First Location (Auto)</option>
+              <option value="primary" className="dark:bg-slate-950">Preserve First Location (Auto)</option>
               {drives.map(d => (
-                <option key={d.id} value={d.id}>
+                <option key={d.id} value={d.id} className="dark:bg-slate-950">
                   Preserve Partition {d.letter}: ({d.name})
                 </option>
               ))}
@@ -591,7 +591,7 @@ Write-Host "========================================================"`;
             disabled={duplicates.length === 0}
             className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
               duplicates.length === 0
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                ? 'bg-slate-200 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
                 : copiedScript 
                   ? 'bg-emerald-600 text-white' 
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -612,13 +612,15 @@ Write-Host "========================================================"`;
 
           <button
             onClick={handleAlreadyCleanUp}
-            disabled={duplicates.length === 0 || cleaning || selectedFiles.size === 0}
+            disabled={duplicates.length === 0 || cleaning}
             className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
-              duplicates.length === 0 || selectedFiles.size === 0
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+              duplicates.length === 0 || cleaning
+                ? 'bg-slate-200 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
                 : cleanSuccess
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-teal-600 hover:bg-teal-700 text-white'
+                  ? 'bg-emerald-600 text-white animate-pulse'
+                  : selectedFiles.size === 0
+                    ? 'bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-800'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white border border-rose-700 dark:border-rose-900/50'
             }`}
           >
             {cleaning ? (
@@ -634,7 +636,7 @@ Write-Host "========================================================"`;
             ) : (
               <>
                 <ClipboardCheck className="w-3.5 h-3.5" />
-                <span>Already CleanUp! ({selectedFiles.size} Selected)</span>
+                <span>Clean Up! {selectedFiles.size > 0 ? `(${selectedFiles.size} Selected)` : ''}</span>
               </>
             )}
           </button>
@@ -644,23 +646,23 @@ Write-Host "========================================================"`;
       {/* 5. Main Results View */}
       <div className="flex-1 overflow-y-auto p-6" id="optimizer-results-list">
         {loading ? (
-          <div className="h-64 flex flex-col items-center justify-center gap-3 bg-white border border-slate-200 rounded-2xl">
+          <div className="h-64 flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
             <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-xs text-slate-500 font-mono font-medium">Scanning catalog structures...</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">Scanning catalog structures...</span>
           </div>
         ) : duplicates.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl text-center">
-            <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl mb-3 border border-slate-100">
+          <div className="h-64 flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-2xl text-center">
+            <div className="p-4 bg-slate-50 dark:bg-slate-950 text-slate-400 rounded-2xl mb-3 border border-slate-100 dark:border-slate-850">
               <CheckCircle2 className="w-8 h-8 text-emerald-500" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">No Duplicates Found!</h3>
-            <p className="text-xs text-slate-500 max-w-md mt-1">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Duplicates Found!</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mt-1">
               Perfect storage map! No duplicate files found satisfying your filters. Clear query parameters or try lowering the size filter threshold.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 py-2 bg-slate-100 rounded-xl border border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3 py-2 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -678,18 +680,18 @@ Write-Host "========================================================"`;
                   }}
                   className="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer"
                 />
-                <label htmlFor="global-select-all" className="text-xs font-bold text-slate-700 select-none cursor-pointer">
+                <label htmlFor="global-select-all" className="text-xs font-bold text-slate-700 dark:text-slate-300 select-none cursor-pointer">
                   Select All {allRedundantKeys.length} Redundant Files ({selectedFiles.size} checked)
                 </label>
               </div>
 
               <div className="flex items-center justify-between sm:justify-end gap-4">
-                <span className="text-[10px] font-mono text-slate-500 uppercase font-bold tracking-wider">
+                <span className="text-[10px] font-mono text-slate-550 dark:text-slate-450 uppercase font-bold tracking-wider">
                   ({duplicates.length} sets shown)
                 </span>
                 <button 
                   onClick={toggleAllGroups} 
-                  className="text-indigo-600 hover:text-indigo-700 font-sans font-semibold text-[11px]"
+                  className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-sans font-semibold text-[11px] cursor-pointer"
                 >
                   {expandedGroups.size === duplicates.length ? 'Collapse All' : 'Expand All'}
                 </button>
@@ -720,8 +722,10 @@ Write-Host "========================================================"`;
                 return (
                   <div 
                     key={key}
-                    className={`bg-white border rounded-xl overflow-hidden shadow-xs transition-all ${
-                      isExpanded ? 'border-slate-300 ring-1 ring-slate-100' : 'border-slate-200 hover:border-slate-300'
+                    className={`bg-white dark:bg-slate-900 border rounded-xl overflow-hidden shadow-xs transition-all ${
+                      isExpanded 
+                        ? 'border-slate-300 dark:border-slate-700 ring-1 ring-slate-100 dark:ring-slate-950' 
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     {/* Collapsed Header Summary */}
@@ -730,7 +734,7 @@ Write-Host "========================================================"`;
                       className="p-3.5 flex items-center justify-between gap-4 cursor-pointer select-none"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="text-slate-400">
+                        <div className="text-slate-400 dark:text-slate-500">
                           {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                         </div>
                         
@@ -751,30 +755,30 @@ Write-Host "========================================================"`;
                             }
                             setSelectedFiles(next);
                           }}
-                          className="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer shrink-0"
+                          className="w-4 h-4 text-rose-600 border-slate-300 dark:border-slate-700 rounded focus:ring-rose-500 cursor-pointer shrink-0"
                           title="Select / deselect all redundant files in this set"
                         />
 
-                        <div className="p-1.5 bg-slate-100 text-slate-500 rounded-lg shrink-0">
+                        <div className="p-1.5 bg-slate-100 dark:bg-slate-950 text-slate-500 dark:text-slate-450 rounded-lg shrink-0">
                           <Layers className="w-4 h-4 text-slate-500" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-semibold text-slate-800 truncate" title={g.name}>
+                          <div className="text-xs font-semibold text-slate-800 dark:text-slate-150 truncate" title={g.name}>
                             {g.name}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono text-slate-500">
-                            <span>Single File: <strong className="text-slate-700">{formatBytes(g.length)}</strong></span>
+                            <span>Single File: <strong className="text-slate-700 dark:text-slate-300">{formatBytes(g.length)}</strong></span>
                             <span>•</span>
-                            <span className="text-amber-700 font-bold bg-amber-50 px-1.5 rounded">{g.duplicate_count} copies</span>
+                            <span className="text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-1.5 rounded">{g.duplicate_count} copies</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <div className="text-xs font-mono font-bold text-rose-600">
+                        <div className="text-xs font-mono font-bold text-rose-600 dark:text-rose-400">
                           -{formatBytes(wasteSize)}
                         </div>
-                        <div className="text-[9px] text-slate-400 font-medium font-sans uppercase">
+                        <div className="text-[9px] text-slate-400 dark:text-slate-500 font-medium font-sans uppercase">
                           Waste Storage
                         </div>
                       </div>
@@ -782,8 +786,8 @@ Write-Host "========================================================"`;
 
                     {/* Expanded Occurrence Detail List */}
                     {isExpanded && (
-                      <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-3 space-y-2.5">
-                        <div className="text-[10px] font-semibold text-slate-500 font-mono flex items-center gap-1">
+                      <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-4 py-3 space-y-2.5">
+                        <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-450 font-mono flex items-center gap-1">
                           <FileWarning className="w-3.5 h-3.5 text-amber-500" />
                           <span>Exact storage locations across partitions:</span>
                         </div>
@@ -809,8 +813,8 @@ Write-Host "========================================================"`;
                                 key={occIdx}
                                 className={`p-2.5 rounded-lg border flex items-center justify-between gap-4 ${
                                   isPreserved 
-                                    ? 'bg-emerald-50/70 border-emerald-100 text-emerald-900' 
-                                    : 'bg-white border-slate-200 text-slate-700'
+                                    ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/40 text-emerald-900 dark:text-emerald-300' 
+                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                                 }`}
                               >
                                 <div className="min-w-0 flex-1 flex items-center gap-2.5">
@@ -827,39 +831,39 @@ Write-Host "========================================================"`;
                                         }
                                         setSelectedFiles(next);
                                       }}
-                                      className="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 cursor-pointer shrink-0"
+                                      className="w-4 h-4 text-rose-600 border-slate-300 dark:border-slate-750 rounded focus:ring-rose-500 cursor-pointer shrink-0"
                                     />
                                   )}
 
                                   <div className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border uppercase shrink-0 ${
                                     isPreserved 
-                                      ? 'bg-emerald-100 border-emerald-200 text-emerald-800'
-                                      : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400'
+                                      : 'bg-indigo-50 dark:bg-indigo-950 border-indigo-100 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400'
                                   }`}>
                                     {occ.DriveName} ({formatBytes(occ.Length, 1)})
                                   </div>
                                   
-                                  <span className="text-xs font-mono truncate text-slate-600" title={occ.FullName}>
+                                  <span className="text-xs font-mono truncate text-slate-600 dark:text-slate-400" title={occ.FullName}>
                                     {occ.FullName}
                                   </span>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   {isPreserved ? (
-                                    <span className="text-[9px] bg-emerald-100 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-md font-sans font-bold flex items-center gap-1">
+                                    <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-450 px-2 py-0.5 rounded-md font-sans font-bold flex items-center gap-1">
                                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                       <span>Preserved</span>
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] bg-rose-50 border border-rose-100 text-rose-700 px-2 py-0.5 rounded-md font-sans font-semibold flex items-center gap-1">
+                                    <span className="text-[9px] bg-rose-50 dark:bg-rose-950 border border-rose-100 dark:border-rose-900/40 text-rose-700 dark:text-rose-450 px-2 py-0.5 rounded-md font-sans font-semibold flex items-center gap-1">
                                       <span>Redundant</span>
                                     </span>
                                   )}
 
                                   <button
                                     onClick={() => handleCopyPath(occ.FullName)}
-                                    className={`p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer ${
-                                      copiedPath === occ.FullName ? 'text-emerald-600' : 'text-slate-400'
+                                    className={`p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer ${
+                                      copiedPath === occ.FullName ? 'text-emerald-600 dark:text-emerald-450' : 'text-slate-400 dark:text-slate-500'
                                     }`}
                                     title="Copy full path to clipboard"
                                   >

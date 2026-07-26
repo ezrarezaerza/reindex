@@ -299,30 +299,30 @@ Write-Host "=========================================================="`;
   }, [drives]);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden" id="export-sync-viewport">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden text-slate-800 dark:text-slate-200" id="export-sync-viewport">
       
       {/* Tab Header navigation */}
-      <div className="px-6 py-5 bg-white border-b border-slate-200 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4" id="export-sync-header">
+      <div className="px-6 py-5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4" id="export-sync-header">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-            <FolderSync className="w-5 h-5 text-indigo-600 animate-pulse" />
+          <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
+            <FolderSync className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-800">Export &amp; Sync Assistant</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Export &amp; Sync Assistant</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Sync files across backup arrays, clone structures with Robocopy, or generate offline indices.
             </p>
           </div>
         </div>
 
         {/* Tab switcher */}
-        <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/40">
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200/40 dark:border-slate-800">
           <button
             onClick={() => setActiveTab('sync')}
             className={`px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               activeTab === 'sync'
-                ? 'bg-white text-slate-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
@@ -332,8 +332,8 @@ Write-Host "=========================================================="`;
             onClick={() => setActiveTab('export')}
             className={`px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               activeTab === 'export'
-                ? 'bg-white text-slate-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             <Download className="w-3.5 h-3.5" />
@@ -353,19 +353,19 @@ Write-Host "=========================================================="`;
             <div className="lg:col-span-2 space-y-4">
               
               {/* Drive Selection Map */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <HardDrive className="w-4 h-4 text-slate-400" />
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                <h3 className="text-xs font-bold font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <HardDrive className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>Sync Path Endpoints</span>
                 </h3>
 
                 {/* Source Directory selection */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 block">Source Partition / Directory</label>
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Source Partition / Directory</label>
                   <select
                     value={sourceDrive}
                     onChange={(e) => setSourceDrive(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
                     {drives.map(d => (
                       <option key={d.id} value={d.letter || d.name.substring(0, 1)}>
@@ -381,18 +381,18 @@ Write-Host "=========================================================="`;
                       placeholder="e.g. D:\Media\Archive"
                       value={customSource}
                       onChange={(e) => setCustomSource(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500 mt-2"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500 mt-2"
                     />
                   )}
                 </div>
 
                 {/* Destination Directory selection */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 block">Destination Partition / Directory</label>
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Destination Partition / Directory</label>
                   <select
                     value={destDrive}
                     onChange={(e) => setDestDrive(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
                     {drives.map(d => (
                       <option key={d.id} value={d.letter || d.name.substring(0, 1)}>
@@ -408,25 +408,25 @@ Write-Host "=========================================================="`;
                       placeholder="e.g. E:\Backup\DriveD"
                       value={customDest}
                       onChange={(e) => setCustomDest(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500 mt-2"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500 mt-2"
                     />
                   )}
                 </div>
               </div>
 
               {/* Advanced Robocopy Settings Config */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <h3 className="text-xs font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <Settings className="w-4 h-4 text-slate-400" />
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                <h3 className="text-xs font-bold font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Settings className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span>Robocopy Core Engine Config</span>
                 </h3>
 
                 {/* Synchronization mode */}
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-600 block">Sync Algorithm Preset</label>
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Sync Algorithm Preset</label>
                   <div className="space-y-2">
                     {/* Mirror Mode Option */}
-                    <label className="flex items-start gap-2.5 p-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-start gap-2.5 p-2 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100/70 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer transition-colors">
                       <input
                         type="radio"
                         name="sync-mode"
@@ -435,15 +435,15 @@ Write-Host "=========================================================="`;
                         className="mt-1 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div>
-                        <div className="text-xs font-bold text-slate-800">Bi-directional / MIRROR (/MIR)</div>
-                        <p className="text-[10px] text-slate-500 mt-0.5 leading-normal">
-                          Makes destination identical to source. <strong className="text-rose-600">WARNING: Deletes files</strong> on destination if missing in source.
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Bi-directional / MIRROR (/MIR)</div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
+                          Makes destination identical to source. <strong className="text-rose-600 dark:text-rose-400">WARNING: Deletes files</strong> on destination if missing in source.
                         </p>
                       </div>
                     </label>
 
                     {/* Incremental Update Mode Option */}
-                    <label className="flex items-start gap-2.5 p-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-start gap-2.5 p-2 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100/70 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer transition-colors">
                       <input
                         type="radio"
                         name="sync-mode"
@@ -452,15 +452,15 @@ Write-Host "=========================================================="`;
                         className="mt-1 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div>
-                        <div className="text-xs font-bold text-slate-800">Safe Update Copy (/E /XO)</div>
-                        <p className="text-[10px] text-slate-500 mt-0.5 leading-normal">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Safe Update Copy (/E /XO)</div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
                           Safely copies new or modified files. Preserves extra directories inside the backup drive. Recommended.
                         </p>
                       </div>
                     </label>
 
                     {/* Dry Run Option */}
-                    <label className="flex items-start gap-2.5 p-2 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-start gap-2.5 p-2 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100/70 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer transition-colors">
                       <input
                         type="radio"
                         name="sync-mode"
@@ -469,8 +469,8 @@ Write-Host "=========================================================="`;
                         className="mt-1 text-indigo-600 focus:ring-indigo-500"
                       />
                       <div>
-                        <div className="text-xs font-bold text-slate-800">Audit Only / Dry Run (/L)</div>
-                        <p className="text-[10px] text-slate-500 mt-0.5 leading-normal">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Audit Only / Dry Run (/L)</div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
                           Logs what would be synchronized without writing or editing any physical block files.
                         </p>
                       </div>
@@ -479,10 +479,10 @@ Write-Host "=========================================================="`;
                 </div>
 
                 {/* Exclusions toggles */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <label className="text-xs font-semibold text-slate-600 block">Exclusion Filters (/XD)</label>
+                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 block">Exclusion Filters (/XD)</label>
                   <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={excludeSystemFiles}
@@ -491,7 +491,7 @@ Write-Host "=========================================================="`;
                       />
                       <span>Exclude System Partition Directories</span>
                     </label>
-                    <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={excludeGitModules}
@@ -500,7 +500,7 @@ Write-Host "=========================================================="`;
                       />
                       <span>Exclude Code Metadata (.git, node_modules)</span>
                     </label>
-                    <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={writeLogFile}
@@ -513,27 +513,27 @@ Write-Host "=========================================================="`;
                 </div>
 
                 {/* Retries and network settings */}
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Fail Retries (/R)</label>
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 uppercase">Fail Retries (/R)</label>
                     <input
                       type="number"
                       min="0"
                       max="100"
                       value={retryCount}
                       onChange={(e) => setRetryCount(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-mono"
+                      className="w-full px-2.5 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-700 dark:text-slate-300 font-mono"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Wait Delay Sec (/W)</label>
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-450 uppercase">Wait Delay Sec (/W)</label>
                     <input
                       type="number"
                       min="0"
                       max="1000"
                       value={retryWait}
                       onChange={(e) => setRetryWait(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="w-full px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-mono"
+                      className="w-full px-2.5 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-700 dark:text-slate-300 font-mono"
                     />
                   </div>
                 </div>
@@ -602,14 +602,14 @@ Write-Host "=========================================================="`;
              ======================================================== */
           <div className="max-w-3xl mx-auto space-y-6">
             
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <Download className="w-5 h-5 text-emerald-600" />
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-850 pb-4">
+                <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                  <Download className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-800">Export Cataloged Directories</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Filter, configure, and compile your external backup drive catalogs into structured offline spreadsheets or plain texts.</p>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Export Cataloged Directories</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Filter, configure, and compile your external backup drive catalogs into structured offline spreadsheets or plain texts.</p>
                 </div>
               </div>
 
@@ -618,13 +618,13 @@ Write-Host "=========================================================="`;
                 
                 {/* Select target catalog */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
                     <span>Source Catalog Scope:</span>
                   </label>
                   <select
                     value={exportDriveId}
                     onChange={(e) => setExportDriveId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
                     <option value="all">All Cataloged Storage Maps Combined</option>
                     {drives.map(d => (
@@ -637,15 +637,15 @@ Write-Host "=========================================================="`;
 
                 {/* Choose Export Format */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600">Export Document Format:</label>
+                  <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Export Document Format:</label>
                   <div className="grid grid-cols-3 gap-2">
                     {/* CSV */}
                     <button
                       onClick={() => setExportFormat('csv')}
                       className={`py-2 px-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                         exportFormat === 'csv'
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/50'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400'
+                          : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/50'
                       }`}
                     >
                       <FileSpreadsheet className="w-4 h-4" />
@@ -657,8 +657,8 @@ Write-Host "=========================================================="`;
                       onClick={() => setExportFormat('json')}
                       className={`py-2 px-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                         exportFormat === 'json'
-                          ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/50'
+                          ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400'
+                          : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/50'
                       }`}
                     >
                       <FileJson className="w-4 h-4" />
@@ -670,8 +670,8 @@ Write-Host "=========================================================="`;
                       onClick={() => setExportFormat('txt')}
                       className={`py-2 px-3 rounded-xl border text-xs font-semibold flex flex-col items-center gap-1 transition-all cursor-pointer ${
                         exportFormat === 'txt'
-                          ? 'bg-amber-50 border-amber-200 text-amber-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/50'
+                          ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
+                          : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/50'
                       }`}
                     >
                       <FileText className="w-4 h-4" />
@@ -683,8 +683,8 @@ Write-Host "=========================================================="`;
               </div>
 
               {/* Inline Filters Panel */}
-              <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl space-y-4">
-                <div className="text-[11px] font-bold font-mono text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 rounded-xl space-y-4">
+                <div className="text-[11px] font-bold font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                   <ListFilter className="w-4 h-4 text-slate-400" />
                   <span>Optional Sub-Filters Before Export</span>
                 </div>
@@ -692,23 +692,23 @@ Write-Host "=========================================================="`;
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* File Name search query */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-500">File Name Query Match</label>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">File Name Query Match</label>
                     <input
                       type="text"
                       placeholder="e.g. video, backup..."
                       value={exportQuery}
                       onChange={(e) => setExportQuery(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-lg text-xs focus:outline-none"
                     />
                   </div>
 
                   {/* Extension Match */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-500">Extension Filter</label>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Extension Filter</label>
                     <select
                       value={exportExtension}
                       onChange={(e) => setExportExtension(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 focus:outline-none"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-lg text-xs focus:outline-none"
                     >
                       <option value="">All Extensions</option>
                       {uniqueExtensions.map(ext => (
@@ -719,13 +719,13 @@ Write-Host "=========================================================="`;
 
                   {/* Minimum Size */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-semibold text-slate-500">Min File Size (Bytes)</label>
+                    <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Min File Size (Bytes)</label>
                     <input
                       type="number"
                       placeholder="e.g. 1048576"
                       value={exportMinSize}
                       onChange={(e) => setExportMinSize(Math.max(0, parseInt(e.target.value) || 0).toString())}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 font-mono focus:outline-none"
+                      className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-700 dark:text-slate-200 font-mono focus:outline-none"
                     />
                   </div>
                 </div>
@@ -733,8 +733,8 @@ Write-Host "=========================================================="`;
 
               {/* Status or loading box */}
               {exportStatus && (
-                <div className="p-3 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl flex items-center gap-2">
-                  <Info className="w-4 h-4 text-indigo-500" />
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-xl flex items-center gap-2">
+                  <Info className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                   <span>{exportStatus}</span>
                 </div>
               )}
@@ -756,7 +756,8 @@ Write-Host "=========================================================="`;
                       <Download className="w-4 h-4" />
                       <span>Compile &amp; Download Index</span>
                     </>
-                  )}
+                  )
+                }
                 </button>
               </div>
 

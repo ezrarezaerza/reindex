@@ -333,5 +333,177 @@ export function generateSampleDrives(): Drive[] {
     description: 'Spinning disk HDD for historic server snapshots, retro family JPG catalogs, and old scanning records.'
   });
 
+  // --- DRIVE 5: AUDIO & SOUND VAULT (Drive I) ---
+  const driveIItems: FileItem[] = [];
+  const audioBooks = [
+    { title: 'The Hobbit', duration: 11, author: 'Tolkien' },
+    { title: 'Dune Chronicles', duration: 22, author: 'Herbert' },
+    { title: 'Foundation Trilogy', duration: 18, author: 'Asimov' },
+  ];
+  const soundEffects = ['Laser_Blast', 'Swoosh_Fast', 'Explosion_Deep', 'Ambient_Rain_Loop', 'Crowd_Cheering', 'SciFi_Computer_Beep'];
+
+  // Populate Drive I: Audiobooks
+  audioBooks.forEach(ab => {
+    const abName = `${ab.title} - Read by Narrator (${ab.author}).m4b`;
+    const size = ab.duration * 45 * 1024 * 1024; // 45MB per hour of audio
+    driveIItems.push({
+      Name: abName,
+      FullName: `I:\\Audiobooks\\Fiction\\${ab.title}\\${abName}`,
+      Extension: '.m4b',
+      Length: size,
+      DriveId: 'drive-i'
+    });
+  });
+
+  // Populate Drive I: Sound Effects (SFX library)
+  soundEffects.forEach(sfx => {
+    for (let take = 1; take <= 5; take++) {
+      const name = `${sfx}_Take_0${take}.wav`;
+      const size = 12 * 1024 * 1024 + Math.floor(Math.random() * 8 * 1024 * 1024); // 12MB - 20MB uncompressed WAV
+      driveIItems.push({
+        Name: name,
+        FullName: `I:\\Sound_Library\\SFX\\${sfx}\\${name}`,
+        Extension: '.wav',
+        Length: size,
+        DriveId: 'drive-i'
+      });
+    }
+  });
+
+  // Music production stems and multitracks
+  const musicStems = ['Drums', 'Bassline', 'Lead_Synth', 'Vocals_Dry', 'Vocals_Wet', 'FX_Risers', 'Acoustic_Guitar'];
+  for (let track = 1; track <= 3; track++) {
+    musicStems.forEach(stem => {
+      const stemName = `Stem_Track_0${track}_${stem}.wav`;
+      const size = 45 * 1024 * 1024 + Math.floor(Math.random() * 25 * 1024 * 1024); // 45-70MB 24-bit WAV stem
+      driveIItems.push({
+        Name: stemName,
+        FullName: `I:\\Projects\\Audio_Stems\\Track_0${track}\\${stemName}`,
+        Extension: '.wav',
+        Length: size,
+        DriveId: 'drive-i'
+      });
+    });
+  }
+
+  drives.push({
+    id: 'drive-i',
+    name: 'Audio Sound Vault',
+    letter: 'I',
+    color: 'cyan',
+    icon: 'disc',
+    lastUpdated: '2026-06-18 10:45',
+    fileCount: driveIItems.length,
+    totalSize: driveIItems.reduce((acc, item) => acc + item.Length, 0),
+    items: driveIItems,
+    description: 'FLAC soundtracks, custom audiobooks, multi-track audio stems, and standard WAV sound effects.'
+  });
+
+
+  // --- DRIVE 6: RETRO ARCHIVE & OS HUB (Drive J) ---
+  const driveJItems: FileItem[] = [];
+  const retroConsoles = ['SNES', 'SegaGenesis', 'PlayStation1', 'N64', 'GameBoyColor'];
+  const osList = ['ubuntu-24.04-desktop-amd64.iso', 'debian-12.5.0-amd64-DVD-1.iso', 'archlinux-2026.07.01-x86_64.iso', 'fedora-workstation-40.iso', 'clonezilla-live-3.1.2.iso'];
+
+  // Retro ROMs
+  retroConsoles.forEach(console => {
+    const romCount = 12 + Math.floor(Math.random() * 15);
+    const ext = console === 'SNES' ? '.sfc' : console === 'SegaGenesis' ? '.bin' : console === 'PlayStation1' ? '.chd' : '.z64';
+    for (let r = 1; r <= romCount; r++) {
+      const romName = `Retro_Game_Title_${console}_${r}${ext}`;
+      const size = (console === 'PlayStation1' ? 350 : 2) * 1024 * 1024 + Math.floor(Math.random() * 200 * 1024 * 1024); // 2MB ROMs or 350MB-550MB CHD discs
+      driveJItems.push({
+        Name: romName,
+        FullName: `J:\\Emulation\\ROMs\\${console}\\${romName}`,
+        Extension: ext,
+        Length: size,
+        DriveId: 'drive-j'
+      });
+    }
+  });
+
+  // Operating Systems & Utilities ISOs
+  osList.forEach(iso => {
+    const size = 1200 * 1024 * 1025 + Math.floor(Math.random() * 3200 * 1024 * 1024); // 1.2GB - 4.4GB ISOs
+    driveJItems.push({
+      Name: iso,
+      FullName: `J:\\Operating_Systems\\Linux\\${iso}`,
+      Extension: '.iso',
+      Length: size,
+      DriveId: 'drive-j'
+    });
+  });
+
+  drives.push({
+    id: 'drive-j',
+    name: 'Retro Station',
+    letter: 'J',
+    color: 'amber',
+    icon: 'database',
+    lastUpdated: '2026-07-22 22:15',
+    fileCount: driveJItems.length,
+    totalSize: driveJItems.reduce((acc, item) => acc + item.Length, 0),
+    items: driveJItems,
+    description: 'System image back-ups, bootable Linux ISO utilities, and custom retro gaming emulation files.'
+  });
+
+
+  // --- DRIVE 7: DEEP LEARNING DEPOT (Drive K) ---
+  const driveKItems: FileItem[] = [];
+  const datasets = ['imagenet_mini_subset', 'coco_captions_2025', 'glove_word_embeddings', 'imdb_sentiment_reviews', 'climate_change_timeseries'];
+  const notebooks = ['eda_and_pre_processing.ipynb', 'model_training_loop.ipynb', 'inference_demo.ipynb', 'quantization_to_onnx.ipynb'];
+
+  // Big Dataset CSVs/Weights
+  datasets.forEach(ds => {
+    // Large raw CSVs
+    const csvName = `${ds}_raw_records.csv`;
+    const csvSize = 120 * 1024 * 1024 + Math.floor(Math.random() * 350 * 1024 * 1024); // 120MB - 470MB CSV
+    driveKItems.push({
+      Name: csvName,
+      FullName: `K:\\AI_Research\\Datasets\\${ds}\\${csvName}`,
+      Extension: '.csv',
+      Length: csvSize,
+      DriveId: 'drive-k'
+    });
+
+    // Model training checkpoints (.pth or .h5)
+    for (let epoch = 1; epoch <= 3; epoch++) {
+      const chkName = `${ds}_weights_epoch_${epoch * 10}.pth`;
+      const size = 250 * 1024 * 1024 + Math.floor(Math.random() * 1200 * 1024 * 1024); // 250MB - 1.45GB PyTorch checkpoints
+      driveKItems.push({
+        Name: chkName,
+        FullName: `K:\\AI_Research\\Checkpoints\\${ds}\\${chkName}`,
+        Extension: '.pth',
+        Length: size,
+        DriveId: 'drive-k'
+      });
+    }
+
+    // Jupyter Notebooks
+    notebooks.forEach(nb => {
+      const size = 15 * 1024 + Math.floor(Math.random() * 450 * 1024); // 15KB - 465KB notebooks with outputs
+      driveKItems.push({
+        Name: `${ds}_${nb}`,
+        FullName: `K:\\AI_Research\\Notebooks\\${ds}\\${ds}_${nb}`,
+        Extension: '.ipynb',
+        Length: size,
+        DriveId: 'drive-k'
+      });
+    });
+  });
+
+  drives.push({
+    id: 'drive-k',
+    name: 'Deep Learning Depot',
+    letter: 'K',
+    color: 'indigo',
+    icon: 'database',
+    lastUpdated: '2026-07-25 17:30',
+    fileCount: driveKItems.length,
+    totalSize: driveKItems.reduce((acc, item) => acc + item.Length, 0),
+    items: driveKItems,
+    description: 'PyTorch model weights, Jupyter notebook pipelines, GloVe embeddings, and massive CSV test databases.'
+  });
+
   return drives;
 }

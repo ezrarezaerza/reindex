@@ -48,19 +48,24 @@ export function getBaseName(pathStr: string): string {
  * Builds a folder structure tree from flat files list.
  * Optimized for memory and fast lookups.
  */
-export function buildTreeFromFiles(files: FileItem[]): FileNode[] {
+export function buildTreeFromFiles(files: FileItem[], driveNamesMap?: Record<string, string>): FileNode[] {
   const roots: FileNode[] = [];
   const nodeMap = new Map<string, FileNode>();
 
   const getOrCreateFolder = (dirPath: string, parentPath: string, dirName: string, driveId?: string): FileNode => {
-    const key = dirPath.toLowerCase();
+    const key = `${driveId || ''}::${dirPath.toLowerCase()}`;
     let node = nodeMap.get(key);
     
     if (!node) {
       // Human-friendly name for drive letters like "E:\"
       let friendlyName = dirName;
       if (dirName.endsWith(':\\') || dirName.endsWith(':')) {
-        friendlyName = `Drive ${dirName.substring(0, 1).toUpperCase()}`;
+        const customName = driveId && driveNamesMap?.[driveId];
+        if (customName) {
+          friendlyName = `${customName} (${dirName})`;
+        } else {
+          friendlyName = `Drive ${dirName.substring(0, 1).toUpperCase()}`;
+        }
       }
 
       node = {
@@ -114,7 +119,7 @@ export function buildTreeFromFiles(files: FileItem[]): FileNode[] {
       }
 
       // Add the file to its parent folder
-      const parentNode = nodeMap.get(parentPath.toLowerCase());
+      const parentNode = nodeMap.get(`${driveId || ''}::${parentPath.toLowerCase()}`);
       if (parentNode) {
         parentNode.children!.push({
           name: file.Name,
@@ -128,7 +133,7 @@ export function buildTreeFromFiles(files: FileItem[]): FileNode[] {
         // Add size to parent and trace up
         let tracePath: string | null = parentPath;
         while (tracePath) {
-          const pNode = nodeMap.get(tracePath.toLowerCase());
+          const pNode = nodeMap.get(`${driveId || ''}::${tracePath.toLowerCase()}`);
           if (pNode) {
             pNode.size += file.Length;
           }
@@ -206,10 +211,19 @@ export function filterTree(nodes: FileNode[], query: string, ext: string, minSiz
 
       // If folder contains matching elements, keep it
       if (filteredChildren.length > 0) {
+        let matchCount = 0;
+        for (const child of filteredChildren) {
+          if (child.type === 'file') {
+            matchCount += 1;
+          } else {
+            matchCount += child.matchCount || 0;
+          }
+        }
         return {
           ...node,
           size: totalSizeOfMatches, // update directory size to represent matching contents
-          children: filteredChildren
+          children: filteredChildren,
+          matchCount
         };
       }
     }

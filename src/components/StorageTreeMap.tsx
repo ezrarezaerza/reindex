@@ -522,7 +522,7 @@ export default function StorageTreeMap({ nodes, onSelectFile }: StorageTreeMapPr
                     <div 
                       key={idx}
                       onClick={() => handleDrillDown(node)}
-                      className="p-2.5 rounded-lg bg-slate-950/40 hover:bg-slate-800 border border-slate-800/60 hover:border-slate-700 transition-all cursor-pointer flex flex-col gap-1.5 group select-none"
+                      className="p-2.5 rounded-lg bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-705 transition-all cursor-pointer flex flex-col gap-1.5 group select-none"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">

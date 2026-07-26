@@ -228,30 +228,30 @@ export default function CollectionsAndTags({
   }, [activeSubTab, collections, tags, selectedCollectionId, selectedTagId]);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden" id="collections-tags-viewport">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden" id="collections-tags-viewport">
       
       {/* Dynamic Tab Selector header */}
-      <div className="px-6 py-5 bg-white border-b border-slate-200 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4" id="collections-tags-header">
+      <div className="px-6 py-5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4" id="collections-tags-header">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-            <FolderHeart className="w-5 h-5 text-indigo-600 animate-pulse" />
+          <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
+            <FolderHeart className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-800">Virtual Storage Spaces</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">Virtual Storage Spaces</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Organize files across 8 hard drives in logical custom groups and color-coded labels.
             </p>
           </div>
         </div>
 
         {/* Tab slider */}
-        <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/40">
+        <div className="flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200/40 dark:border-slate-800">
           <button
             onClick={() => setActiveSubTab('collections')}
             className={`px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               activeSubTab === 'collections'
-                ? 'bg-white text-slate-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm border border-slate-200/50 dark:border-slate-800'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -261,8 +261,8 @@ export default function CollectionsAndTags({
             onClick={() => setActiveSubTab('tags')}
             className={`px-4 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               activeSubTab === 'tags'
-                ? 'bg-white text-slate-800 shadow-sm border border-slate-200/50'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-sm border border-slate-200/50 dark:border-slate-800'
+                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
             <Tags className="w-3.5 h-3.5" />
@@ -275,11 +275,11 @@ export default function CollectionsAndTags({
       <div className="flex-1 grid grid-cols-1 md:grid-cols-4 min-h-0" id="collections-tags-body">
         
         {/* Left Side Sidebar listing of categories */}
-        <div className="md:col-span-1 border-r border-slate-200 bg-white flex flex-col min-h-0">
+        <div className="md:col-span-1 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col min-h-0">
           
           {/* Header Action inside Left Column */}
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 shrink-0 flex items-center justify-between">
-            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+          <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 shrink-0 flex items-center justify-between">
+            <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               {activeSubTab === 'collections' ? 'My Collections' : 'My Color Labels'}
             </span>
             <button
@@ -290,7 +290,7 @@ export default function CollectionsAndTags({
                   setIsCreatingTag(true);
                 }
               }}
-              className="p-1 hover:bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-150 transition-colors flex items-center gap-1 cursor-pointer text-xs font-bold font-sans"
+              className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-lg border border-indigo-150 dark:border-indigo-900/50 transition-colors flex items-center gap-1 cursor-pointer text-xs font-bold font-sans"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add</span>
@@ -305,38 +305,38 @@ export default function CollectionsAndTags({
                  ======================================================== */
               <>
                 {isCreatingColl && (
-                  <form onSubmit={handleCreateCollection} className="p-3 bg-indigo-50/50 border border-indigo-150 rounded-xl space-y-2.5 animate-in slide-in-from-top duration-200">
+                  <form onSubmit={handleCreateCollection} className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-150 dark:border-indigo-900/50 rounded-xl space-y-2.5 animate-in slide-in-from-top duration-200">
                     <div>
-                      <label className="text-[9px] font-bold text-indigo-700 uppercase block mb-1">Collection Name</label>
+                      <label className="text-[9px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Collection Name</label>
                       <input
                         type="text"
                         placeholder="e.g., Summer Shoots"
                         value={newCollName}
                         onChange={(e) => setNewCollName(e.target.value)}
                         required
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-sans text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
-                      <label className="text-[9px] font-bold text-indigo-700 uppercase block mb-1">Short Description</label>
+                      <label className="text-[9px] font-bold text-indigo-700 dark:text-indigo-400 uppercase block mb-1">Short Description</label>
                       <textarea
                         placeholder="Purpose of this group..."
                         value={newCollDesc}
                         onChange={(e) => setNewCollDesc(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-sans text-slate-700 h-14 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] font-sans text-slate-700 dark:text-slate-300 h-14 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </div>
                     <div className="flex items-center justify-end gap-1.5 pt-1">
                       <button
                         type="button"
                         onClick={() => setIsCreatingColl(false)}
-                        className="px-2.5 py-1 text-[10px] text-slate-500 hover:text-slate-800 font-bold"
+                        className="px-2.5 py-1 text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-bold cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-3 py-1 bg-indigo-600 text-white text-[10px] rounded-md font-bold hover:bg-indigo-700"
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded-md font-bold cursor-pointer"
                       >
                         Create
                       </button>
@@ -345,8 +345,8 @@ export default function CollectionsAndTags({
                 )}
 
                 {collections.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-xs">
-                    <FolderPlus className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <div className="p-6 text-center text-slate-400 dark:text-slate-550 text-xs">
+                    <FolderPlus className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
                     <span>No collections created yet.</span>
                   </div>
                 ) : (
@@ -357,10 +357,10 @@ export default function CollectionsAndTags({
                       return (
                         <div
                           key={c.id}
-                          className="p-3 rounded-xl border border-rose-200 bg-rose-50/40 flex flex-col gap-2 animate-in fade-in duration-150"
+                          className="p-3 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-950/20 flex flex-col gap-2 animate-in fade-in duration-150"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-[11px] font-bold text-rose-600 font-sans leading-tight">Delete collection "{c.name}"?</span>
+                          <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 font-sans leading-tight">Delete collection "{c.name}"?</span>
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={(e) => {
@@ -380,7 +380,7 @@ export default function CollectionsAndTags({
                                 e.stopPropagation();
                                 setDeletingCollectionId(null);
                               }}
-                              className="px-2.5 py-0.5 bg-white hover:bg-slate-100 text-slate-600 text-[10px] font-bold rounded border border-slate-200 cursor-pointer transition-all shadow-xs"
+                              className="px-2.5 py-0.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-800 cursor-pointer transition-all shadow-xs"
                             >
                               Cancel
                             </button>
@@ -395,23 +395,23 @@ export default function CollectionsAndTags({
                         onClick={() => setSelectedCollectionId(c.id)}
                         className={`group p-3 rounded-xl border transition-all duration-150 flex items-center justify-between cursor-pointer ${
                           isActive
-                            ? 'bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-xs'
-                            : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                            ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 text-indigo-900 dark:text-indigo-200 shadow-xs'
+                            : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950/60 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`p-1.5 rounded-lg ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                          <div className={`p-1.5 rounded-lg ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-950 text-slate-400 dark:text-slate-500'}`}>
                             <FolderHeart className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
                             <span className="text-xs font-bold block truncate">{c.name}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">{c.files.length} items</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{c.files.length} items</span>
                           </div>
                         </div>
 
                         <button
                           onClick={(e) => handleDeleteCollection(c.id, e)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-450 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -426,9 +426,9 @@ export default function CollectionsAndTags({
                  ======================================================== */
               <>
                 {isCreatingTag && (
-                  <form onSubmit={handleCreateTag} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 animate-in slide-in-from-top duration-200">
+                  <form onSubmit={handleCreateTag} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2.5 animate-in slide-in-from-top duration-200">
                     <div>
-                      <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Tag Label Name</label>
+                      <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Tag Label Name</label>
                       <input
                         type="text"
                         placeholder="e.g. Tax-2025"
@@ -438,14 +438,14 @@ export default function CollectionsAndTags({
                           if (tagError) setTagError(null);
                         }}
                         required
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-sans text-slate-700 focus:outline-none"
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-sans text-slate-700 dark:text-slate-200 focus:outline-none"
                       />
                       {tagError && (
-                        <p className="text-[10px] text-rose-600 font-bold mt-1 font-sans">{tagError}</p>
+                        <p className="text-[10px] text-rose-600 dark:text-rose-400 font-bold mt-1 font-sans">{tagError}</p>
                       )}
                     </div>
                     <div>
-                      <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">Color Chip Profile</label>
+                      <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1.5">Color Chip Profile</label>
                       <div className="grid grid-cols-4 gap-1.5">
                         {COLOR_PRESETS.map((color, cIdx) => (
                           <button
@@ -454,7 +454,7 @@ export default function CollectionsAndTags({
                             onClick={() => setNewTagColor(color.class)}
                             className={`p-1.5 rounded border flex items-center justify-center text-[10px] transition-all cursor-pointer ${
                               newTagColor === color.class
-                                ? 'border-slate-800 scale-105 shadow-xs'
+                                ? 'border-slate-800 dark:border-slate-300 scale-105 shadow-xs'
                                 : 'border-transparent'
                             } ${color.class}`}
                           >
@@ -467,13 +467,13 @@ export default function CollectionsAndTags({
                       <button
                         type="button"
                         onClick={() => setIsCreatingTag(false)}
-                        className="px-2.5 py-1 text-[10px] text-slate-500 hover:text-slate-800 font-bold"
+                        className="px-2.5 py-1 text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-bold cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-3 py-1 bg-indigo-600 text-white text-[10px] rounded-md font-bold hover:bg-indigo-700"
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] rounded-md font-bold cursor-pointer"
                       >
                         Add Tag
                       </button>
@@ -482,8 +482,8 @@ export default function CollectionsAndTags({
                 )}
 
                 {tags.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-xs">
-                    <Tags className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <div className="p-6 text-center text-slate-400 dark:text-slate-550 text-xs">
+                    <Tags className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
                     <span>No tags created yet.</span>
                   </div>
                 ) : (
@@ -495,10 +495,10 @@ export default function CollectionsAndTags({
                       return (
                         <div
                           key={t.id}
-                          className="p-2.5 rounded-xl border border-rose-200 bg-rose-50/40 flex flex-col gap-2 animate-in fade-in duration-150"
+                          className="p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-950/20 flex flex-col gap-2 animate-in fade-in duration-150"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-[11px] font-bold text-rose-600 font-sans leading-tight">Delete tag "{t.name}"?</span>
+                          <span className="text-[11px] font-bold text-rose-600 dark:text-rose-450 font-sans leading-tight">Delete tag "{t.name}"?</span>
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={(e) => {
@@ -519,7 +519,7 @@ export default function CollectionsAndTags({
                                 e.stopPropagation();
                                 setDeletingTagId(null);
                               }}
-                              className="px-2.5 py-0.5 bg-white hover:bg-slate-100 text-slate-650 text-[10px] font-bold rounded border border-slate-200 cursor-pointer transition-all shadow-xs"
+                              className="px-2.5 py-0.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-800 cursor-pointer transition-all shadow-xs"
                             >
                               Cancel
                             </button>
@@ -534,20 +534,20 @@ export default function CollectionsAndTags({
                         onClick={() => setSelectedTagId(t.id)}
                         className={`group p-2.5 rounded-xl border transition-all duration-150 flex items-center justify-between cursor-pointer ${
                           isActive
-                            ? 'bg-slate-100 border-slate-250 text-slate-900 shadow-xs'
-                            : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                            ? 'bg-slate-150 dark:bg-slate-800/80 border-slate-250 dark:border-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
+                            : 'bg-transparent border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950/40 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${t.color}`}>
+                          <div className={`px-2 py-0.5 rounded text-[10px] font-bold border dark:brightness-90 ${t.color}`}>
                             {t.name}
                           </div>
-                          <span className="text-[10px] text-slate-400 font-mono font-medium">({tagCount})</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium">({tagCount})</span>
                         </div>
 
                         <button
                           onClick={(e) => handleDeleteTag(t.id, e)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-450 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg transition-all"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -561,33 +561,33 @@ export default function CollectionsAndTags({
         </div>
 
         {/* Right Side Main Details Panel */}
-        <div className="md:col-span-3 flex flex-col min-h-0 bg-slate-50">
+        <div className="md:col-span-3 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950">
           {activeSubTab === 'collections' ? (
             /* ========================================================
                COLLECTION FILE DETAILS VIEWER
                ======================================================== */
             selectedCollection ? (
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950">
                 {/* Title Card banner */}
-                <div className="p-6 bg-white border-b border-slate-200 shrink-0">
+                <div className="p-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <FolderHeart className="w-5 h-5 text-indigo-600" />
-                        <h3 className="text-base font-bold text-slate-800">{selectedCollection.name}</h3>
+                        <FolderHeart className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">{selectedCollection.name}</h3>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1 font-sans">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
                         {selectedCollection.description || 'No custom description provided.'}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-400 font-mono font-medium">
-                      <span className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 font-mono font-medium">
+                      <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 px-2.5 py-1 rounded border border-slate-200/40 dark:border-slate-800">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         <span>Created: {selectedCollection.createdAt}</span>
                       </span>
-                      <span className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded">
-                        <Layers className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 px-2.5 py-1 rounded border border-slate-200/40 dark:border-slate-800">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         <span>{selectedCollection.files.length} indices grouped</span>
                       </span>
                     </div>
@@ -597,10 +597,10 @@ export default function CollectionsAndTags({
                 {/* Scroller list of files inside selected collection */}
                 <div className="flex-1 overflow-y-auto p-6 min-h-0">
                   {collectionFilesResolved.length === 0 ? (
-                    <div className="py-16 text-center text-slate-400 max-w-sm mx-auto">
-                      <Info className="w-10 h-10 text-indigo-300 mx-auto mb-3" />
-                      <h4 className="text-sm font-bold text-slate-700">This Collection is empty</h4>
-                      <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    <div className="py-16 text-center text-slate-400 dark:text-slate-500 max-w-sm mx-auto">
+                      <Info className="w-10 h-10 text-indigo-300 dark:text-indigo-800 mx-auto mb-3" />
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">This Collection is empty</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                         Search for file items globally or inside a physical drive, click on the file's **"Inspect (Info)"** details icon, and select this collection to assign it here.
                       </p>
                     </div>
@@ -614,35 +614,35 @@ export default function CollectionsAndTags({
                           <div 
                             key={fIdx}
                             onClick={() => onSelectFile(resolved.FullName)}
-                            className="bg-white hover:bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 shadow-xs cursor-pointer flex items-center justify-between gap-4 transition-all hover:border-slate-300"
+                            className="bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-950/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800 shadow-xs cursor-pointer flex items-center justify-between gap-4 transition-all hover:border-slate-300 dark:hover:border-slate-700"
                           >
                             <div className="flex items-start gap-3 min-w-0">
-                              <div className="p-2.5 bg-slate-50 border border-slate-150 rounded-xl shrink-0 mt-0.5">
+                              <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shrink-0 mt-0.5 animate-pulse">
                                 <Icon className={`w-5 h-5 ${color}`} />
                               </div>
                               <div className="min-w-0">
-                                <span className="text-xs font-bold text-slate-800 break-all leading-snug hover:text-indigo-600">{resolved.Name}</span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 break-all leading-snug hover:text-indigo-600 dark:hover:text-indigo-400">{resolved.Name}</span>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   {/* Partition tag */}
                                   {associatedDrive && (
-                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.2 rounded">
-                                      <Server className="w-2.5 h-2.5 text-indigo-400" />
+                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 px-1.5 py-0.2 rounded">
+                                      <Server className="w-2.5 h-2.5 text-indigo-400 dark:text-indigo-500" />
                                       <span>{associatedDrive.letter}: ({associatedDrive.name})</span>
                                     </span>
                                   )}
-                                  <span className="text-[10px] text-slate-400 font-mono font-medium truncate max-w-xs sm:max-w-md">{resolved.FullName}</span>
+                                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium truncate max-w-xs sm:max-w-md">{resolved.FullName}</span>
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
-                              <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
+                              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-950 border border-slate-200/30 dark:border-slate-800 px-2.5 py-1 rounded">
                                 {resolved.Length > 0 ? formatBytes(resolved.Length) : 'Cached'}
                               </span>
 
                               <button
                                 onClick={(e) => handleRemoveFileFromCollection(selectedCollection.id, raw.driveId, raw.fullName, e)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg transition-colors cursor-pointer"
                                 title="Remove file from virtual collection"
                               >
                                 <X className="w-4 h-4" />
@@ -656,10 +656,10 @@ export default function CollectionsAndTags({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-                <FolderHeart className="w-12 h-12 text-slate-300 mb-2" />
-                <span className="font-semibold text-slate-600">Select a Collection</span>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs">Pick a collection from the left panel to browse its aggregated multi-drive file mapping.</p>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-500">
+                <FolderHeart className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-2" />
+                <span className="font-semibold text-slate-600 dark:text-slate-300">Select a Collection</span>
+                <p className="text-xs text-slate-400 dark:text-slate-400 mt-1 max-w-xs">Pick a collection from the left panel to browse its aggregated multi-drive file mapping.</p>
               </div>
             )
           ) : (
@@ -667,25 +667,25 @@ export default function CollectionsAndTags({
                TAGS FILE DETAILS VIEWER
                ======================================================== */
             selectedTag ? (
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-950">
                 {/* Title Card banner */}
-                <div className="p-6 bg-white border-b border-slate-200 shrink-0 flex items-center justify-between">
+                <div className="p-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <TagIcon className="w-5 h-5 text-indigo-600 animate-pulse" />
+                    <TagIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-3 py-1 text-xs font-bold border rounded-lg ${selectedTag.color}`}>
+                        <span className={`px-3 py-1 text-xs font-bold border rounded-lg dark:brightness-90 ${selectedTag.color}`}>
                           {selectedTag.name}
                         </span>
-                        <h3 className="text-sm font-semibold font-mono text-slate-400 uppercase tracking-wider">Active Label Filter</h3>
+                        <h3 className="text-sm font-semibold font-mono text-slate-400 dark:text-slate-500 uppercase tracking-wider">Active Label Filter</h3>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1 font-sans">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
                         Browse files from all drives containing the color label metadata tag.
                       </p>
                     </div>
                   </div>
 
-                  <span className="text-xs font-mono font-bold bg-slate-100 px-3 py-1 rounded text-slate-600">
+                  <span className="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 px-3 py-1 rounded text-slate-600 dark:text-slate-400">
                     {taggedFilesResolved.length} labeled paths found
                   </span>
                 </div>
@@ -693,10 +693,10 @@ export default function CollectionsAndTags({
                 {/* Scroller list of files matching selected Tag */}
                 <div className="flex-1 overflow-y-auto p-6 min-h-0">
                   {taggedFilesResolved.length === 0 ? (
-                    <div className="py-16 text-center text-slate-400 max-w-sm mx-auto">
-                      <Tags className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                      <h4 className="text-sm font-bold text-slate-700">No files tagged as "{selectedTag.name}"</h4>
-                      <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    <div className="py-16 text-center text-slate-400 dark:text-slate-500 max-w-sm mx-auto">
+                      <Tags className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">No files tagged as "{selectedTag.name}"</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                         To label files, select an external hard drive, inspect any file using the **"Inspect (Info)"** details icon, and assign the tag from the sidebar.
                       </p>
                     </div>
@@ -710,35 +710,35 @@ export default function CollectionsAndTags({
                           <div 
                             key={fIdx}
                             onClick={() => onSelectFile(resolved.FullName)}
-                            className="bg-white hover:bg-slate-50/60 p-4 rounded-xl border border-slate-200/60 shadow-xs cursor-pointer flex items-center justify-between gap-4 transition-all hover:border-slate-300"
+                            className="bg-white dark:bg-slate-900 hover:bg-slate-50/60 dark:hover:bg-slate-950/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-800 shadow-xs cursor-pointer flex items-center justify-between gap-4 transition-all hover:border-slate-300 dark:hover:border-slate-700"
                           >
                             <div className="flex items-start gap-3 min-w-0">
-                              <div className="p-2.5 bg-slate-50 border border-slate-150 rounded-xl shrink-0 mt-0.5">
+                              <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shrink-0 mt-0.5 animate-pulse">
                                 <Icon className={`w-5 h-5 ${color}`} />
                               </div>
                               <div className="min-w-0">
-                                <span className="text-xs font-bold text-slate-800 break-all leading-snug hover:text-indigo-600">{resolved.Name}</span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 break-all leading-snug hover:text-indigo-600 dark:hover:text-indigo-400">{resolved.Name}</span>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   {/* Partition tag */}
                                   {associatedDrive && (
-                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.2 rounded">
-                                      <Server className="w-2.5 h-2.5 text-indigo-400" />
+                                    <span className="flex items-center gap-1 text-[9px] font-bold font-mono bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 px-1.5 py-0.2 rounded">
+                                      <Server className="w-2.5 h-2.5 text-indigo-400 dark:text-indigo-500" />
                                       <span>{associatedDrive.letter}: ({associatedDrive.name})</span>
                                     </span>
                                   )}
-                                  <span className="text-[10px] text-slate-400 font-mono font-medium truncate max-w-xs sm:max-w-md">{resolved.FullName}</span>
+                                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono font-medium truncate max-w-xs sm:max-w-md">{resolved.FullName}</span>
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
-                              <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded">
+                              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-950 border border-slate-200/30 dark:border-slate-800 px-2.5 py-1 rounded">
                                 {resolved.Length > 0 ? formatBytes(resolved.Length) : 'Cached'}
                               </span>
 
                               <button
                                 onClick={(e) => handleRemoveTagFromFile(raw.driveId, raw.fullName, selectedTag.id, e)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-450 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg transition-colors cursor-pointer"
                                 title="Remove tag from file"
                               >
                                 <X className="w-4 h-4" />
@@ -752,10 +752,10 @@ export default function CollectionsAndTags({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-                <TagIcon className="w-12 h-12 text-slate-300 mb-2" />
-                <span className="font-semibold text-slate-600">Select a Tag Filter</span>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs">Pick an active color tag from the left panel to display files across all backup arrays.</p>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-500">
+                <TagIcon className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-2" />
+                <span className="font-semibold text-slate-600 dark:text-slate-300">Select a Tag Filter</span>
+                <p className="text-xs text-slate-400 dark:text-slate-450 mt-1 max-w-xs">Pick an active color tag from the left panel to display files across all backup arrays.</p>
               </div>
             )
           )}

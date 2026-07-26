@@ -27,6 +27,7 @@ export interface FileNode {
   extension?: string;
   children?: FileNode[];
   driveId?: string;
+  matchCount?: number;
 }
 
 export interface SearchFiltersState {
